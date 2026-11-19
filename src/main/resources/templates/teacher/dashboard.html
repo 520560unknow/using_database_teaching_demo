@@ -1,0 +1,2539 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课堂智答 · 教师工作台</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- 优化后的CSS样式 -->
+    <style>
+        /* ========== 全局样式 ========== */
+        :root {
+            --cyberpunk-primary: #00ffea;
+            --cyberpunk-secondary: #ff00a0;
+            --cyberpunk-accent: #f706cf;
+            --cyberpunk-dark: #0a0a16;
+            --cyberpunk-darker: #05050a;
+            --cyberpunk-light: #00ffea;
+            --cyberpunk-text: #00ffea;
+            --cyberpunk-text-secondary: #a0a0ff;
+            --cyberpunk-glow: 0 0 5px var(--cyberpunk-primary), 0 0 10px var(--cyberpunk-primary);
+            --cyberpunk-gradient: linear-gradient(135deg, var(--cyberpunk-primary), var(--cyberpunk-secondary));
+            --cyberpunk-border: 1px solid var(--cyberpunk-primary);
+            --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-normal: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', monospace;
+            background: var(--cyberpunk-dark);
+            color: var(--cyberpunk-text);
+            line-height: 1.6;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(0, 255, 234, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 0, 160, 0.1) 0%, transparent 50%),
+                linear-gradient(to bottom, transparent 0%, rgba(0, 255, 234, 0.05) 100%);
+            z-index: -1;
+        }
+
+        /* 网格背景 */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 255, 234, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 234, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+            z-index: -1;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(20px, 20px); }
+        }
+
+        /* ========== 字体层次 ========== */
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 700;
+            line-height: 1.3;
+            color: var(--cyberpunk-text);
+            margin-bottom: 1rem;
+            text-shadow: 0 0 2px var(--cyberpunk-primary);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            border-bottom: 1px solid var(--cyberpunk-primary);
+            padding-bottom: 0.5rem;
+            display: inline-block;
+        }
+
+        h2 {
+            font-size: 2rem;
+        }
+
+        h3 {
+            font-size: 1.75rem;
+        }
+
+        h4 {
+            font-size: 1.5rem;
+        }
+
+        h5 {
+            font-size: 1.25rem;
+            color: var(--cyberpunk-text-secondary);
+        }
+
+        h6 {
+            font-size: 1rem;
+        }
+
+        p {
+            margin-bottom: 1rem;
+            line-height: 1.6;
+            color: var(--cyberpunk-text-secondary);
+        }
+
+        .text-sm {
+            font-size: 0.875rem;
+        }
+
+        .text-lg {
+            font-size: 1.125rem;
+        }
+
+        .text-xl {
+            font-size: 1.25rem;
+        }
+
+        .font-bold {
+            font-weight: 700;
+        }
+
+        .font-semibold {
+            font-weight: 600;
+        }
+
+        .font-medium {
+            font-weight: 500;
+        }
+
+        /* ========== 导航栏 ========== */
+        .navbar-custom {
+            background: rgba(10, 10, 22, 0.95);
+            border-bottom: 1px solid var(--cyberpunk-primary);
+            box-shadow: 0 0 20px rgba(0, 255, 234, 0.3);
+            padding: 0.8rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .navbar-brand {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--cyberpunk-text) !important;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0.5rem 0;
+            letter-spacing: 0.5px;
+            text-shadow: var(--cyberpunk-glow);
+        }
+
+        .navbar-brand i {
+            font-size: 1.8rem;
+            animation: pulse 2s infinite;
+            color: var(--cyberpunk-primary);
+        }
+
+        .navbar-nav .nav-link {
+            color: var(--cyberpunk-text-secondary) !important;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            transition: var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid transparent;
+        }
+
+        .navbar-nav .nav-link:hover,
+        .navbar-nav .nav-link.active {
+            background: rgba(0, 255, 234, 0.1);
+            color: var(--cyberpunk-text) !important;
+            border: 1px solid var(--cyberpunk-primary);
+            box-shadow: 0 0 10px rgba(0, 255, 234, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .navbar-toggler {
+            border: 1px solid var(--cyberpunk-primary);
+            padding: 0.25rem 0.5rem;
+            background: rgba(0, 255, 234, 0.1);
+        }
+
+        .navbar-toggler-icon {
+            filter: invert(1) sepia(1) saturate(1000%) hue-rotate(180deg);
+        }
+
+        /* ========== 主内容区域 ========== */
+        .main-content {
+            padding: 3rem 0 5rem 0;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .container {
+            max-width: 1440px;
+            padding: 0 30px;
+        }
+
+        /* ========== 消息提示 ========== */
+        .alert {
+            border: 1px solid var(--cyberpunk-primary);
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 255, 234, 0.3);
+            margin-bottom: 1.5rem;
+            animation: slideInDown 0.5s ease-out;
+            background: rgba(10, 10, 22, 0.8);
+            color: var(--cyberpunk-text);
+        }
+
+        .alert-success {
+            background: rgba(0, 255, 234, 0.1);
+            border-color: var(--cyberpunk-primary);
+            color: var(--cyberpunk-text);
+        }
+
+        .alert-danger {
+            background: rgba(255, 0, 160, 0.1);
+            border-color: var(--cyberpunk-secondary);
+            color: var(--cyberpunk-secondary);
+        }
+
+        .alert i {
+            font-size: 1.2rem;
+            color: var(--cyberpunk-primary);
+        }
+
+        /* ========== 欢迎卡片 ========== */
+        .welcome-card {
+            background: rgba(10, 10, 22, 0.8);
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 
+                0 0 20px rgba(0, 255, 234, 0.2),
+                inset 0 0 30px rgba(0, 255, 234, 0.1);
+            position: relative;
+            overflow: hidden;
+            animation: scaleIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both;
+            border: 1px solid var(--cyberpunk-primary);
+            backdrop-filter: blur(10px);
+        }
+
+        .welcome-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 100%;
+            background: var(--cyberpunk-gradient);
+            box-shadow: 0 0 15px var(--cyberpunk-primary);
+        }
+
+        .welcome-card h1 {
+            color: var(--cyberpunk-text);
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            text-shadow: var(--cyberpunk-glow);
+        }
+
+        .welcome-card h1 i {
+            color: var(--cyberpunk-primary);
+            background: rgba(0, 255, 234, 0.1);
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            font-size: 1.8rem;
+            border: 1px solid var(--cyberpunk-primary);
+            box-shadow: 0 0 15px rgba(0, 255, 234, 0.5);
+        }
+
+        .welcome-card p {
+            color: var(--cyberpunk-text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .welcome-card #teacherId {
+            font-family: 'Monaco', 'Consolas', monospace;
+            background: rgba(0, 255, 234, 0.1);
+            color: var(--cyberpunk-primary);
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 5px;
+            border: 1px solid var(--cyberpunk-primary);
+        }
+
+        .lan-access-info {
+            margin-top: 1rem;
+            padding: 1rem 1.25rem;
+            background: rgba(0, 255, 234, 0.05);
+            border: 1px solid var(--cyberpunk-primary);
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(0, 255, 234, 0.15);
+            transition: var(--transition-normal);
+        }
+
+        .lan-access-info:hover {
+            background: rgba(0, 255, 234, 0.1);
+            box-shadow: 0 0 20px rgba(0, 255, 234, 0.25);
+            transform: translateX(5px);
+        }
+
+        .lan-access-info p {
+            margin: 0 0 0.5rem 0;
+            font-size: 0.95rem;
+            color: var(--cyberpunk-text);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-shadow: 0 0 5px rgba(0, 255, 234, 0.3);
+        }
+
+        .lan-access-info p i {
+            color: var(--cyberpunk-primary);
+            font-size: 1.1rem;
+        }
+
+        .lan-access-link {
+            display: inline-block;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 1rem;
+            color: var(--cyberpunk-primary);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            background: rgba(0, 255, 234, 0.1);
+            border: 1px solid var(--cyberpunk-primary);
+            border-radius: 8px;
+            transition: var(--transition-fast);
+            word-break: break-all;
+            box-shadow: 0 0 10px rgba(0, 255, 234, 0.2);
+        }
+
+        .lan-access-link:hover {
+            background: var(--cyberpunk-gradient);
+            color: var(--cyberpunk-dark);
+            text-decoration: none;
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 255, 234, 0.5);
+        }
+
+        .lan-access-info small {
+            display: block;
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--cyberpunk-text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .lan-access-info small i {
+            color: var(--cyberpunk-primary);
+            font-size: 0.9rem;
+        }
+
+        .welcome-card .btn-light {
+            background: rgba(0, 255, 234, 0.1);
+            border: 2px solid var(--cyberpunk-primary);
+            color: var(--cyberpunk-primary);
+            font-weight: 600;
+            transition: var(--transition-normal);
+        }
+
+        .welcome-card .btn-light:hover {
+            background: var(--cyberpunk-gradient);
+            color: var(--cyberpunk-dark);
+            border-color: var(--cyberpunk-primary);
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 0 25px rgba(0, 255, 234, 0.5);
+        }
+
+        /* ========== 快速操作卡片 ========== */
+        .quick-action-card {
+            background: rgba(10, 10, 22, 0.8);
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            height: 100%;
+            transition: var(--transition-normal);
+            border: 1px solid var(--cyberpunk-primary);
+            animation: scaleIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) var(--delay) both;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 0 20px rgba(0, 255, 234, 0.15);
+            backdrop-filter: blur(10px);
+        }
+
+        .quick-action-card i {
+            font-size: 2.8rem;
+            margin-bottom: 1.5rem;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 20px;
+            background: var(--cyberpunk-gradient);
+            color: var(--cyberpunk-dark);
+            transition: var(--transition-normal);
+            box-shadow: 0 0 20px rgba(0, 255, 234, 0.5);
+            border: 1px solid var(--cyberpunk-primary);
+        }
+
+        .quick-action-card:hover {
+            transform: translateY(-12px);
+            box-shadow: 0 0 30px rgba(0, 255, 234, 0.3);
+            border-color: var(--cyberpunk-primary);
+        }
+
+        .quick-action-card:hover i {
+            transform: scale(1.15) rotate(8deg);
+            box-shadow: 0 0 25px rgba(0, 255, 234, 0.7);
+        }
+
+        .quick-action-card h5 {
+            font-weight: 700;
+            color: var(--cyberpunk-text);
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            text-shadow: 0 0 5px var(--cyberpunk-primary);
+        }
+
+        .quick-action-card .text-muted {
+            font-size: 0.95rem;
+            color: var(--cyberpunk-text-secondary);
+            margin-bottom: 1.5rem;
+            flex-grow: 1;
+            line-height: 1.4;
+        }
+
+        .quick-action-card .btn {
+            width: 100%;
+            border-radius: 10px;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.9rem;
+            transition: var(--transition-normal);
+            background: rgba(0, 255, 234, 0.1);
+            border: 1px solid var(--cyberpunk-primary);
+            color: var(--cyberpunk-primary);
+        }
+
+        .quick-action-card .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(0, 255, 234, 0.5);
+            background: var(--cyberpunk-gradient);
+            color: var(--cyberpunk-dark);
+        }
+
+        /* ========== 主卡片样式 ========== */
+        .main-card {
+            background: rgba(10, 10, 22, 0.8);
+            border-radius: 20px;
+            overflow: hidden;
+            height: 100%;
+            box-shadow: 
+                0 0 20px rgba(0, 255, 234, 0.15),
+                inset 0 0 30px rgba(0, 255, 234, 0.05);
+            transition: var(--transition-normal);
+            animation: fadeInUp 0.6s ease-out var(--delay) both;
+            border: 1px solid var(--cyberpunk-primary);
+            position: relative;
+            backdrop-filter: blur(10px);
+        }
+
+        .main-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--cyberpunk-gradient);
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 0 15px var(--cyberpunk-primary);
+        }
+
+        .main-card:hover {
+            box-shadow: 
+                0 0 30px rgba(0, 255, 234, 0.3),
+                inset 0 0 40px rgba(0, 255, 234, 0.1);
+            transform: translateY(-8px);
+            border-color: var(--cyberpunk-primary);
+        }
+
+        .card-header {
+            background: rgba(0, 255, 234, 0.1);
+            border-bottom: 1px solid var(--cyberpunk-primary);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-header > div {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            color: var(--cyberpunk-text);
+            font-size: 1.3rem;
+            letter-spacing: 0.5px;
+            text-shadow: 0 0 5px var(--cyberpunk-primary);
+        }
+
+        .card-header i {
+            color: var(--cyberpunk-primary);
+            font-size: 1.3rem;
+            text-shadow: 0 0 10px var(--cyberpunk-primary);
+        }
+
+        .card-header-badge {
+            background: var(--cyberpunk-gradient);
+            color: var(--cyberpunk-dark);
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: 0 0 10px rgba(0, 255, 234, 0.5);
+            border: 1px solid var(--cyberpunk-primary);
+        }
+
+        .card-header .btn {
+            border-radius: 10px;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: var(--transition-normal);
+            background: rgba(0, 255, 234, 0.1);
+            border: 1px solid var(--cyberpunk-primary);
+            color: var(--cyberpunk-primary);
+        }
+
+        .card-header .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(0, 255, 234, 0.5);
+            background: var(--cyberpunk-gradient);
+            color: var(--cyberpunk-dark);
+        }
+
+        /* ========== 表格样式 ========== */
+        .table-responsive {
+            overflow: hidden;
+            border-radius: 0 0 20px 20px;
+        }
+
+        .table-custom {
+            margin: 0;
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+        }
+
+        .table-custom thead th {
+            background: rgba(0, 255, 234, 0.1);
+            color: var(--cyberpunk-text);
+            font-weight: 700;
+            border: none;
+            padding: 1.25rem 2rem;
+            border-bottom: 1px solid var(--cyberpunk-primary);
+            font-size: 0.95rem;
+            text-shadow: 0 0 5px var(--cyberpunk-primary);
+        }
+
+        .table-custom tbody td {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid rgba(0, 255, 234, 0.2);
+            vertical-align: middle;
+            transition: var(--transition-fast);
+            font-size: 0.95rem;
+            color: var(--cyberpunk-text-secondary);
+            background: rgba(10, 10, 22, 0.5);
+        }
+
+        .table-custom tbody tr {
+            transition: var(--transition-normal);
+        }
+
+        .table-custom tbody tr:hover {
+            background: rgba(0, 255, 234, 0.1);
+        }
+
+        .table-custom tbody tr:hover td {
+            background: rgba(0, 255, 234, 0.1);
+            transform: translateX(8px);
+            color: var(--cyberpunk-text);
+            box-shadow: 0 0 10px rgba(0, 255, 234, 0.3);
+        }
+
+        .table-custom tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* ========== 状态徽章 ========== */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 24px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: var(--transition-normal);
+            box-shadow: 0 0 10px rgba(0, 255, 234, 0.3);
+            border: 1px solid var(--cyberpunk-primary);
+        }
+
+        .status-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(0, 255, 234, 0.5);
+        }
+
+        .status-active {
+            background: rgba(0, 255, 234, 0.1);
+            color: var(--cyberpunk-primary);
+            border: 1px solid var(--cyberpunk-primary);
+            box-shadow: 0 0 10px rgba(0, 255, 234, 0.3);
+        }
+
+        .status-inactive {
+            background: rgba(160, 160, 255, 0.1);
+            color: var(--cyberpunk-text-secondary);
+            border: 1px solid var(--cyberpunk-text-secondary);
+            box-shadow: 0 0 10px rgba(160, 160, 255, 0.3);
+        }
+
+        .status-paused {
+            background: rgba(255, 0, 160, 0.1);
+            color: var(--cyberpunk-secondary);
+            border: 1px solid var(--cyberpunk-secondary);
+            box-shadow: 0 0 10px rgba(255, 0, 160, 0.3);
+        }
+
+        .status-ended {
+            background: rgba(255, 100, 100, 0.1);
+            color: #ff6464;
+            border: 1px solid #ff6464;
+            box-shadow: 0 0 10px rgba(255, 100, 100, 0.3);
+        }
+
+        /* ========== 操作按钮组 ========== */
+        .btn-action-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: var(--transition-fast);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            border: 1px solid var(--cyberpunk-primary);
+            background: rgba(0, 255, 234, 0.1);
+            color: var(--cyberpunk-primary);
+            box-shadow: 0 0 5px rgba(0, 255, 234, 0.2);
+        }
+
+        .btn-action-primary {
+            background: rgba(0, 255, 234, 0.1);
+            color: var(--cyberpunk-primary);
+            border-color: var(--cyberpunk-primary);
+        }
+
+        .btn-action-success {
+            background: rgba(0, 255, 234, 0.1);
+            color: var(--cyberpunk-primary);
+            border-color: var(--cyberpunk-primary);
+        }
+
+        .btn-action-warning {
+            background: rgba(255, 0, 160, 0.1);
+            color: var(--cyberpunk-secondary);
+            border-color: var(--cyberpunk-secondary);
+        }
+
+        .btn-action-danger {
+            background: rgba(255, 100, 100, 0.1);
+            color: #ff6464;
+            border-color: #ff6464;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 10px rgba(0, 255, 234, 0.5);
+        }
+
+        .btn-action-primary:hover {
+            background: var(--cyberpunk-gradient);
+            color: var(--cyberpunk-dark);
+            box-shadow: 0 0 15px rgba(0, 255, 234, 0.7);
+        }
+
+        .btn-action-success:hover {
+            background: var(--cyberpunk-gradient);
+            color: var(--cyberpunk-dark);
+            box-shadow: 0 0 15px rgba(0, 255, 234, 0.7);
+        }
+
+        .btn-action-warning:hover {
+            background: linear-gradient(135deg, var(--cyberpunk-secondary), #ff64b4);
+            color: var(--cyberpunk-dark);
+            box-shadow: 0 0 15px rgba(255, 0, 160, 0.7);
+        }
+
+        .btn-action-danger:hover {
+            background: linear-gradient(135deg, #ff6464, #ff8787);
+            color: var(--cyberpunk-dark);
+            box-shadow: 0 0 15px rgba(255, 100, 100, 0.7);
+        }
+
+        /* ========== 视频树列表 ========== */
+        .video-tree-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .video-tree-item {
+            background: rgba(10, 10, 22, 0.8);
+            border: 1px solid var(--cyberpunk-primary);
+            border-radius: 12px;
+            padding: 1.25rem;
+            transition: var(--transition-normal);
+            animation: scaleIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) var(--delay) both;
+            box-shadow: 0 0 15px rgba(0, 255, 234, 0.15);
+            backdrop-filter: blur(5px);
+        }
+
+        .video-tree-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 25px rgba(0, 255, 234, 0.3);
+            border-color: var(--cyberpunk-primary);
+        }
+
+        .video-tree-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .video-tree-name {
+            font-weight: 600;
+            color: var(--cyberpunk-text);
+            font-size: 1.1rem;
+            text-shadow: 0 0 5px var(--cyberpunk-primary);
+        }
+
+        .video-tree-date {
+            font-size: 0.85rem;
+            color: var(--cyberpunk-text-secondary);
+        }
+
+        .video-tree-desc {
+            color: var(--cyberpunk-text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+
+        .video-tree-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .video-tree-nodes {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--cyberpunk-primary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-shadow: 0 0 5px var(--cyberpunk-primary);
+        }
+
+        .video-tree-nodes i {
+            font-size: 0.9rem;
+            color: var(--cyberpunk-primary);
+        }
+
+        /* ========== 空状态 ========== */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            color: var(--cyberpunk-text-secondary);
+        }
+
+        .empty-state i {
+            font-size: 3.5rem;
+            color: rgba(0, 255, 234, 0.2);
+            margin-bottom: 1rem;
+            text-shadow: 0 0 15px rgba(0, 255, 234, 0.5);
+        }
+
+        .empty-state h5 {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--cyberpunk-text);
+            text-shadow: 0 0 5px var(--cyberpunk-primary);
+        }
+
+        .empty-state p {
+            max-width: 400px;
+            margin: 0 auto 1.5rem;
+            line-height: 1.6;
+            color: var(--cyberpunk-text-secondary);
+        }
+
+        .empty-state .btn {
+            border-radius: 8px;
+            font-weight: 500;
+            background: rgba(0, 255, 234, 0.1);
+            border: 1px solid var(--cyberpunk-primary);
+            color: var(--cyberpunk-primary);
+            transition: var(--transition-normal);
+        }
+
+        .empty-state .btn:hover {
+            background: var(--cyberpunk-gradient);
+            color: var(--cyberpunk-dark);
+            box-shadow: 0 0 15px rgba(0, 255, 234, 0.7);
+        }
+
+        /* ========== 模态框样式 ========== */
+        .modal-create-classroom .modal-content {
+            border: 1px solid var(--cyberpunk-primary);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(0, 255, 234, 0.3);
+            background: rgba(10, 10, 22, 0.95);
+            backdrop-filter: blur(15px);
+        }
+
+        .modal-header {
+            background: var(--cyberpunk-gradient);
+            color: var(--cyberpunk-dark);
+            border-bottom: 1px solid var(--cyberpunk-primary);
+            padding: 1.5rem 2rem;
+            box-shadow: 0 0 20px rgba(0, 255, 234, 0.5);
+        }
+
+        .modal-title {
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-shadow: 0 0 5px rgba(0, 255, 234, 0.5);
+        }
+
+        .btn-close-white {
+            filter: invert(0) grayscale(0%) brightness(100%);
+            opacity: 0.8;
+            transition: var(--transition-fast);
+        }
+
+        .btn-close-white:hover {
+            opacity: 1;
+            filter: drop-shadow(0 0 5px rgba(0, 255, 234, 0.8));
+        }
+
+        .modal-body {
+            padding: 2rem;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--cyberpunk-text);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-shadow: 0 0 5px rgba(0, 255, 234, 0.3);
+        }
+
+        .form-control, .form-select {
+            border: 2px solid var(--cyberpunk-primary);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            transition: var(--transition-fast);
+            background: rgba(10, 10, 22, 0.8);
+            color: var(--cyberpunk-text);
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--cyberpunk-secondary);
+            box-shadow: 0 0 0 0.25rem rgba(0, 255, 234, 0.25);
+        }
+
+        .form-control::placeholder {
+            color: var(--cyberpunk-text-secondary);
+        }
+
+        .form-text-custom {
+            font-size: 0.875rem;
+            color: var(--cyberpunk-text-secondary);
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+        }
+
+        /* ========== 选项卡样式 ========== */
+        .nav-tabs-custom {
+            border-bottom: 2px solid rgba(0, 255, 234, 0.3);
+            margin-bottom: 1.5rem;
+        }
+
+        .nav-tabs-custom .nav-link {
+            border: 1px solid transparent;
+            border-radius: 8px 8px 0 0;
+            padding: 0.75rem 1.25rem;
+            color: var(--cyberpunk-text-secondary);
+            font-weight: 500;
+            transition: var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(10, 10, 22, 0.8);
+        }
+
+        .nav-tabs-custom .nav-link.active {
+            background: rgba(0, 255, 234, 0.1);
+            color: var(--cyberpunk-primary);
+            border: 1px solid var(--cyberpunk-primary);
+            border-bottom: 3px solid var(--cyberpunk-primary);
+            box-shadow: 0 0 10px rgba(0, 255, 234, 0.3);
+            text-shadow: 0 0 5px rgba(0, 255, 234, 0.5);
+        }
+
+        .nav-tabs-custom .nav-link:hover:not(.active) {
+            background: rgba(0, 255, 234, 0.05);
+            color: var(--cyberpunk-text);
+            border: 1px solid rgba(0, 255, 234, 0.3);
+        }
+
+        /* ========== 文件上传区域 ========== */
+        .file-upload-area {
+            border: 2px dashed var(--cyberpunk-primary);
+            border-radius: 12px;
+            padding: 3rem 2rem;
+            text-align: center;
+            transition: var(--transition-normal);
+            cursor: pointer;
+            background: rgba(0, 255, 234, 0.05);
+            box-shadow: 0 0 20px rgba(0, 255, 234, 0.1);
+        }
+
+        .file-upload-area:hover, .file-upload-area.drag-over {
+            border-color: var(--cyberpunk-secondary);
+            background: rgba(0, 255, 234, 0.1);
+            box-shadow: 0 0 30px rgba(0, 255, 234, 0.2);
+        }
+
+        .file-upload-icon {
+            font-size: 3rem;
+            color: var(--cyberpunk-primary);
+            margin-bottom: 1rem;
+            text-shadow: 0 0 15px rgba(0, 255, 234, 0.5);
+        }
+
+        .file-upload-text h4 {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--cyberpunk-text);
+            text-shadow: 0 0 5px rgba(0, 255, 234, 0.3);
+        }
+
+        .file-upload-text p {
+            color: var(--cyberpunk-text-secondary);
+            margin-bottom: 1.5rem;
+        }
+
+        .file-upload-text .btn {
+            border-radius: 8px;
+            padding: 0.5rem 1.5rem;
+            background: rgba(0, 255, 234, 0.1);
+            border: 1px solid var(--cyberpunk-primary);
+            color: var(--cyberpunk-primary);
+            transition: var(--transition-normal);
+        }
+
+        .file-upload-text .btn:hover {
+            background: var(--cyberpunk-gradient);
+            color: var(--cyberpunk-dark);
+            box-shadow: 0 0 15px rgba(0, 255, 234, 0.7);
+        }
+
+        /* ========== 设置网格 ========== */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .setting-option {
+            background: rgba(0, 255, 234, 0.05);
+            border-radius: 10px;
+            padding: 1rem;
+            transition: var(--transition-fast);
+            border: 1px solid rgba(0, 255, 234, 0.2);
+            box-shadow: 0 0 10px rgba(0, 255, 234, 0.1);
+        }
+
+        .setting-option:hover {
+            background: rgba(0, 255, 234, 0.1);
+            transform: translateY(-3px);
+            box-shadow: 0 0 15px rgba(0, 255, 234, 0.3);
+            border-color: var(--cyberpunk-primary);
+        }
+
+        .setting-option label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            color: var(--cyberpunk-text);
+            margin-bottom: 0.25rem;
+            cursor: pointer;
+            text-shadow: 0 0 5px rgba(0, 255, 234, 0.3);
+        }
+
+        .setting-option small {
+            color: var(--cyberpunk-text-secondary);
+            font-size: 0.85rem;
+        }
+
+        /* ========== 按钮样式 ========== */
+        .btn {
+            font-weight: 500;
+            transition: var(--transition-normal);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border-radius: 8px;
+        }
+
+        .btn-primary {
+            background: var(--cyberpunk-gradient);
+            border: 1px solid var(--cyberpunk-primary);
+            color: var(--cyberpunk-dark);
+            box-shadow: 0 0 15px rgba(0, 255, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #00e6d3, #ff00d4);
+            color: var(--cyberpunk-dark);
+            transform: translateY(-3px);
+            box-shadow: 0 0 25px rgba(0, 255, 234, 0.7);
+        }
+
+        .btn-outline-primary {
+            border-color: var(--cyberpunk-primary);
+            color: var(--cyberpunk-primary);
+            background: rgba(0, 255, 234, 0.1);
+        }
+
+        .btn-outline-primary:hover {
+            background: var(--cyberpunk-gradient);
+            border-color: var(--cyberpunk-primary);
+            color: var(--cyberpunk-dark);
+            transform: translateY(-3px);
+            box-shadow: 0 0 15px rgba(0, 255, 234, 0.5);
+        }
+
+        .btn-light {
+            background: rgba(0, 255, 234, 0.1);
+            border: 2px solid var(--cyberpunk-primary);
+            color: var(--cyberpunk-primary);
+        }
+
+        .btn-light:hover {
+            background: var(--cyberpunk-gradient);
+            color: var(--cyberpunk-dark);
+            border-color: var(--cyberpunk-primary);
+            box-shadow: 0 0 15px rgba(0, 255, 234, 0.5);
+        }
+
+        /* ========== 动画 ========== */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .animate-up {
+            animation: fadeInUp 0.6s ease-out var(--delay) both;
+        }
+
+        /* ========== 响应式设计 ========== */
+        @media (max-width: 768px) {
+            .welcome-card {
+                padding: 1.5rem;
+                text-align: center;
+            }
+
+            .welcome-card h1 {
+                justify-content: center;
+            }
+
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-tabs-custom .nav-link {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.9rem;
+            }
+
+            .table-responsive {
+                font-size: 0.9rem;
+            }
+
+            .table-custom th,
+            .table-custom td {
+                padding: 0.75rem;
+            }
+
+            .modal-body {
+                padding: 1.5rem;
+            }
+
+            .btn-action-group {
+                flex-direction: column;
+            }
+
+            .btn-action {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .navbar-brand {
+                font-size: 1.2rem;
+            }
+
+            .welcome-card h1 {
+                font-size: 1.8rem;
+            }
+
+            .quick-action-card {
+                padding: 1rem;
+            }
+
+            .quick-action-card i {
+                width: 50px;
+                height: 50px;
+                font-size: 1.8rem;
+            }
+        }
+
+        /* ========== 滚动条样式 ========== */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(74, 0, 224, 0.3);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(74, 0, 224, 0.5);
+        }
+
+        /* ========== 加载器 ========== */
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ========== 自定义通知 ========== */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            color: white;
+            font-weight: 500;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            animation: slideInRight 0.5s ease-out;
+            max-width: 350px;
+        }
+
+        .notification-success {
+            background: linear-gradient(135deg, #34c759 0%, #28a745 100%);
+        }
+
+        .notification-error {
+            background: linear-gradient(135deg, #ff3b30 0%, #dc3545 100%);
+        }
+
+        .notification-warning {
+            background: linear-gradient(135deg, #ff9500 0%, #ffc107 100%);
+            color: #333;
+        }
+
+        .notification-info {
+            background: linear-gradient(135deg, #007aff 0%, #17a2b8 100%);
+        }
+    </style>
+</head>
+<body>
+<!-- 导航栏部分保持不变 -->
+<nav class="navbar navbar-expand-lg navbar-custom">
+    <div class="container">
+        <a class="navbar-brand" href="#">
+            <i class="fas fa-comments"></i>
+            课堂互动系统
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon text-white"><i class="fas fa-bars"></i></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#">
+                        <i class="fas fa-home"></i> 工作台
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/teacher/teacherMode(teacherId=${teacherId})}">
+                        <i class="fas fa-sitemap"></i> 视频树编辑器
+                    </a>
+                 </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/teacher/ai(teacherId=${teacherId})}">
+                        <i class="fas fa-robot"></i> 资料库与答疑
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/teacher/analytics(teacherId=${teacherId})}">
+                        <i class="fas fa-chart-line"></i> 学情看板
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/teacher/workspace(teacherId=${teacherId})}">
+                        <i class="fas fa-box-archive"></i> 视频与数据包
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">
+                        <i class="fas fa-sign-out-alt"></i> 退出
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- 主内容区域 -->
+<div class="main-content">
+    <div class="container">
+        <!-- 消息提示区域 -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- 欢迎卡片 -->
+        <div class="welcome-card">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-chalkboard-teacher"></i> 课堂智答 · 教师工作台</h1>
+                    <p class="mb-2" style="font-size: 16px; opacity: 0.9;">
+                        欢迎
+                    </p>
+                    <p class="mb-0" style="font-size: 14px; opacity: 0.8;">
+                        <input type="hidden" id="teacherIdHidden" th:value="${teacherId}">
+                    </p>
+                    
+                    <div class="lan-access-info" th:if="${lanAccessUrl != null}">
+                        <p>
+                            <i class="fas fa-user-graduate"></i>
+                            学生Dashboard访问地址：
+                        </p>
+                        <span class="lan-access-link" th:id="'studentUrl'"
+                              th:text="${lanAccessUrl} + '/student/dashboard'">
+                            http://192.168.x.x:8080/student/dashboard
+                        </span>
+                        <button class="btn btn-sm btn-outline-light ms-2" style="border-radius: 20px; padding: 4px 14px; font-size: 12px;"
+                                th:attr="onclick=|copyToClipboard('${lanAccessUrl}/student/dashboard')|">
+                            <i class="fas fa-copy"></i> 复制
+                        </button>
+                        <small class="d-block mt-1">
+                            <i class="fas fa-info-circle"></i>
+                            点击"复制"按钮，将链接分享给学生
+                        </small>
+                    </div>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button class="btn btn-light btn-lg" style="border-radius: 50px; padding: 12px 30px; font-weight: 600;"
+                            data-bs-toggle="modal" data-bs-target="#createClassroomModal">
+                        <i class="fas fa-plus-circle"></i> 创建新课堂
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快速操作 -->
+        <div class="row mb-8 g-5">
+            <div class="col-lg-3 col-md-6 col-sm-12">
+                <div class="quick-action-card" style="--delay: 0.1s">
+                    <i class="fas fa-sitemap"></i>
+                    <h5>视频树编辑器</h5>
+                    <p class="text-muted">设计和管理教学视频路径</p>
+                    <a th:href="@{/teacher/teacherMode(teacherId=${teacherId})}" class="btn btn-primary btn-sm mt-3 w-100">
+                        进入编辑器
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6 col-sm-12">
+                <div class="quick-action-card" style="--delay: 0.2s">
+                    <i class="fas fa-file-powerpoint"></i>
+                    <h5>PPT课件系统</h5>
+                    <p class="text-muted">基于金山文档的在线PPT播放</p>
+                    <a th:href="@{/kdocs(teacherId=${teacherId})}" class="btn btn-outline-primary btn-sm mt-3 w-100">
+                        进入PPT系统
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6 col-sm-12">
+                <div class="quick-action-card" style="--delay: 0.3s">
+                    <i class="fas fa-file-code"></i>
+                    <h5>JSON文件管理</h5>
+                    <p class="text-muted">上传并存储视频树JSON文件</p>
+                    <div class="mt-3">
+                        <input type="file" id="jsonFileUpload" class="d-none" accept=".json">
+                        <button type="button" class="btn btn-outline-primary btn-sm w-100" onclick="document.getElementById('jsonFileUpload').click()">
+                            储存JSON文件
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6 col-sm-12">
+                <div class="quick-action-card" style="--delay: 0.4s">
+                    <i class="fas fa-folder"></i>
+                    <h5>文件管理</h5>
+                    <p class="text-muted">管理和删除视频与JSON文件</p>
+                    <button type="button" class="btn btn-outline-primary btn-sm mt-3 w-100" onclick="showFileManager()">
+                        管理文件
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 我的课堂 -->
+        <div class="row gap-4">
+            <!-- 我的课堂 -->
+            <div class="col-lg-12 col-md-12">
+                <div class="main-card h-100" style="--delay: 0.2s">
+                    <div class="card-header">
+                        <div>
+                            <i class="fas fa-chalkboard"></i> 我的课堂
+                            <span class="card-header-badge" id="classroomCount" th:text="${classrooms != null ? #lists.size(classrooms) : 0}">0</span>
+                        </div>
+                        <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#createClassroomModal">
+                            <i class="fas fa-plus"></i> 新建课堂
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div th:if="${#lists.isEmpty(classrooms)}">
+                            <div class="empty-state">
+                                <i class="fas fa-chalkboard-teacher"></i>
+                                <h5>暂无课堂</h5>
+                                <p>您还没有创建任何课堂，点击上方按钮创建第一个课堂吧！</p>
+                                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createClassroomModal">
+                                    <i class="fas fa-plus-circle"></i> 创建新课堂
+                                </button>
+                            </div>
+                        </div>
+
+                        <div th:unless="${#lists.isEmpty(classrooms)}">
+                            <div class="table-responsive">
+                                <table class="table table-custom mb-0">
+                                    <thead>
+                                    <tr>
+                                        <th style="width: 30%;">课堂名称</th>
+                                        <th style="width: 15%;">课堂ID</th>
+                                        <th style="width: 15%;">状态</th>
+                                        <th style="width: 20%;">创建时间</th>
+                                        <th style="width: 20%;">操作</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr th:each="classroom, iterStat : ${classrooms}" class="animate-up" style="--delay: calc(0.05s * ${iterStat.index})"><!-- 新增 animate-up 类和延迟动画 -->
+                                        <td>
+                                            <div style="font-weight: 600; color: #333;" th:text="${classroom.name}">课堂名称</div>
+                                            <div style="font-size: 13px; color: #6c757d;" th:text="${classroom.description}">课堂描述</div>
+                                        </td>
+                                        <td>
+                                            <code style="background: #f8f9fa; padding: 4px 8px; border-radius: 4px; font-size: 13px;" th:text="${classroom.id}">
+                                                课堂ID
+                                            </code>
+                                        </td>
+                                        <td>
+                                            <!-- 根据状态显示不同的徽章 -->
+                                            <span th:if="${classroom.status == 'active'}" class="status-badge status-active">
+                                                <i class="fas fa-play-circle"></i> 进行中
+                                            </span>
+                                            <span th:if="${classroom.status == 'created'}" class="status-badge status-inactive">
+                                                <i class="fas fa-clock"></i> 未开始
+                                            </span>
+                                            <span th:if="${classroom.status == 'paused'}" class="status-badge status-paused">
+                                                <i class="fas fa-pause-circle"></i> 已暂停
+                                            </span>
+                                            <span th:if="${classroom.status == 'ended'}" class="status-badge status-ended">
+                                                <i class="fas fa-stop-circle"></i> 已结束
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <!-- 修改这里：从 classroom.createTime 改为 classroom.createdTime -->
+                                            <span style="font-size: 14px; color: #495057;"
+                                                  th:text="${classroom.createdTime != null ? #dates.format(classroom.createdTime, 'yyyy-MM-dd HH:mm') : '刚刚'}">
+                                                创建时间
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-action-group">
+                                                <a th:href="@{/teacher/classroom/{id}(id=${classroom.id})}" class="btn-action btn-action-primary">
+                                                    <i class="fas fa-door-open"></i> 进入
+                                                </a>
+                                                <button th:if="${classroom.status == 'created' or classroom.status == 'paused'}"
+                                                        class="btn-action btn-action-success" th:attr="onclick=|startClass('${classroom.id}')|">
+                                                    <i class="fas fa-play"></i> 开始
+                                                </button>
+                                                <button th:if="${classroom.status == 'active'}"
+                                                        class="btn-action btn-action-warning" th:attr="onclick=|pauseClass('${classroom.id}')|">
+                                                    <i class="fas fa-pause"></i> 暂停
+                                                </button>
+                                                <button class="btn-action btn-action-danger" th:attr="onclick=|endClass('${classroom.id}')|">
+                                                    <i class="fas fa-stop"></i> 结束
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- 创建课堂模态框 -->
+<div class="modal fade modal-create-classroom" id="createClassroomModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus-circle"></i> 创建新课堂
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createClassroomForm">
+                    <div class="mb-4">
+                        <label for="className" class="form-label">
+                            <i class="fas fa-chalkboard"></i> 课堂名称
+                        </label>
+                        <input type="text" class="form-control" id="className"
+                               placeholder="例如：高等数学第一节 - 极限与连续" required>
+                        <div class="form-text-custom">
+                            <i class="fas fa-info-circle"></i>
+                            请输入清晰易懂的课堂名称，方便学生识别
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="classDescription" class="form-label">
+                            <i class="fas fa-align-left"></i> 课堂描述（可选）
+                        </label>
+                        <textarea class="form-control" id="classDescription" rows="3"
+                                  placeholder="描述本节课的主要内容、目标和注意事项..."></textarea>
+                        <div class="form-text-custom">
+                            <i class="fas fa-info-circle"></i>
+                            简要描述课堂内容，帮助学生了解本节课的重点
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">
+                            <i class="fas fa-sitemap"></i> 选择视频树
+                        </label>
+
+                        <!-- 选项卡导航 -->
+                        <ul class="nav nav-tabs nav-tabs-custom" id="videoTreeTab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="existing-tab" data-bs-toggle="tab"
+                                        data-bs-target="#existing" type="button" role="tab">
+                                    <i class="fas fa-database"></i> 使用已有视频树
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="upload-tab" data-bs-toggle="tab"
+                                        data-bs-target="#upload" type="button" role="tab">
+                                    <i class="fas fa-upload"></i> 传输JSON文件
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="create-tab" data-bs-toggle="tab"
+                                        data-bs-target="#create" type="button" role="tab">
+                                    <i class="fas fa-plus"></i> 创建新视频树
+                                </button>
+                            </li>
+                        </ul>
+
+                        <!-- 选项卡内容 -->
+                        <div class="tab-content" id="videoTreeTabContent">
+                            <!-- 已有视频树选项卡 -->
+                            <div class="tab-pane fade show active" id="existing" role="tabpanel">
+                                <!-- 工作区视频树选择 -->
+                                <div class="mb-3">
+                                    <label for="existingVideoTreeSelect" class="form-label small text-muted">
+                                        <i class="fas fa-folder-open"></i> 工作区中的视频树（含「视频与数据包」导入）
+                                    </label>
+                                    <select class="form-select" id="existingVideoTreeSelect" onchange="selectWorkspaceTree()">
+                                        <option value="">-- 请选择视频树 --</option>
+                                        <option th:each="tree : ${videoTrees}"
+                                                th:value="${tree.id}"
+                                                th:text="${tree.name}"
+                                                th:attr="data-desc=${tree.description},data-count=${tree.nodeCount}"></option>
+                                    </select>
+                                </div>
+
+                                <!-- 从JSON存储中选择按钮 -->
+                                <div class="mb-3">
+                                    <button type="button" class="btn btn-outline-secondary w-100" onclick="showJsonFileManager()">
+                                        <i class="fas fa-database"></i> 从JSON存储中选择
+                                    </button>
+                                </div>
+
+                                <!-- 视频树信息卡片 -->
+                                <div id="videoTreeInfo" class="video-tree-item" style="display: none;">
+                                    <div class="video-tree-header">
+                                        <div class="video-tree-name" id="treeName">视频树名称</div>
+                                        <div class="video-tree-date" id="treeDate">01/01</div>
+                                    </div>
+                                    <p class="video-tree-desc" id="treeDesc">视频树描述...</p>
+                                    <div class="video-tree-footer">
+                                        <span class="video-tree-nodes">
+                                            <i class="fas fa-video"></i>
+                                            节点: <span id="treeNodeCount">0</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 上传JSON文件选项卡 -->
+                            <div class="tab-pane fade" id="upload" role="tabpanel">
+                                <div class="file-upload-area" id="jsonFileDropArea">
+                                    <div class="file-upload-icon">
+                                        <i class="fas fa-file-upload"></i>
+                                    </div>
+                                    <div class="file-upload-text">
+                                        <h4>拖放JSON文件到这里</h4>
+                                        <p>或</p>
+                                        <input type="file" id="jsonFileInput" class="d-none" accept=".json">
+                                        <button type="button" class="btn btn-primary" onclick="document.getElementById('jsonFileInput').click()">
+                                            选择文件
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="mt-3" id="jsonFileInfo" style="display: none;">
+                                    <div class="p-3 border rounded">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span id="jsonFileName">文件名</span>
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="removeJsonFile()">
+                                                <i class="fas fa-trash"></i> 移除
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 创建新视频树选项卡 -->
+                            <div class="tab-pane fade" id="create" role="tabpanel">
+                                <p class="text-muted mb-3">
+                                    点击下方按钮进入视频树编辑器，创建新的视频树结构
+                                </p>
+                                <a th:href="@{/teacher/teacherMode(teacherId=${teacherId})}" class="btn btn-primary w-100">
+                                    <i class="fas fa-sitemap"></i> 进入视频树编辑器
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">
+                            <i class="fas fa-cog"></i> 课堂设置
+                        </label>
+                        <div class="settings-grid">
+                            <div class="setting-option">
+                                <label>
+                                    <input type="checkbox" id="enableDanmaku" checked>
+                                    启用弹幕
+                                </label>
+                                <small>允许学生发送弹幕</small>
+                            </div>
+                            <div class="setting-option">
+                                <label>
+                                    <input type="checkbox" id="enableComments" checked>
+                                    启用评论
+                                </label>
+                                <small>允许学生发送评论</small>
+                            </div>
+                            <div class="setting-option">
+                                <label>
+                                    <input type="checkbox" id="autoJump" checked>
+                                    自动跳转
+                                </label>
+                                <small>视频结束后自动跳转到下一个</small>
+                            </div>
+                            <div class="setting-option">
+                                <label>
+                                    <input type="checkbox" id="recordSession" checked>
+                                    记录会话
+                                </label>
+                                <small>记录课堂互动内容</small>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    取消
+                </button>
+                <button type="button" class="btn btn-primary" onclick="createClassroom()">
+                    <i class="fas fa-plus"></i> 创建课堂
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- 数据统计模态框 -->
+<div class="modal fade" id="statisticsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-chart-line"></i> 数据统计
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row gap-4">
+                    <div class="col-md-4">
+                        <div class="p-4 bg-light rounded-lg">
+                            <h6>课堂统计</h6>
+                            <div class="mt-3">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>总课堂数</span>
+                                    <span class="font-weight-bold">12</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>进行中课堂</span>
+                                    <span class="font-weight-bold text-success">3</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>已结束课堂</span>
+                                    <span class="font-weight-bold">9</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>平均课堂时长</span>
+                                    <span class="font-weight-bold">45分钟</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-4 bg-light rounded-lg">
+                            <h6>互动统计</h6>
+                            <div class="mt-3">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>总弹幕数</span>
+                                    <span class="font-weight-bold">1,245</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>总评论数</span>
+                                    <span class="font-weight-bold">328</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>平均互动率</span>
+                                    <span class="font-weight-bold">78%</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>最高互动课堂</span>
+                                    <span class="font-weight-bold">高等数学</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-4 bg-light rounded-lg">
+                            <h6>视频统计</h6>
+                            <div class="mt-3">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>总视频数</span>
+                                    <span class="font-weight-bold">45</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>总播放时长</span>
+                                    <span class="font-weight-bold">12小时</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>平均观看完成率</span>
+                                    <span class="font-weight-bold">85%</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>最受欢迎视频</span>
+                                    <span class="font-weight-bold">极限与连续</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <h6>互动趋势</h6>
+                    <div class="p-4 bg-light rounded-lg">
+                        <div class="chart-container" style="height: 300px;">
+                            <canvas id="interactionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    关闭
+                </button>
+                <button type="button" class="btn btn-primary">
+                    <i class="fas fa-download"></i> 导出报告
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 文件管理模态框 -->
+<div class="modal fade modal-create-classroom" id="fileManagerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-folder"></i> 文件管理
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-4">
+                    <ul class="nav nav-tabs nav-tabs-custom" id="fileTypeTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="video-tab" data-bs-toggle="tab" data-bs-target="#video" type="button" role="tab">
+                                <i class="fas fa-video"></i> 视频文件
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="json-tab" data-bs-toggle="tab" data-bs-target="#json" type="button" role="tab">
+                                <i class="fas fa-file-code"></i> JSON文件
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="tab-content" id="fileTypeTabContent">
+                    <!-- 视频文件选项卡 -->
+                    <div class="tab-pane fade show active" id="video" role="tabpanel">
+                        <div id="videoFileList">
+                            <div class="text-center py-4 text-muted">
+                                <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                                <p>加载视频文件列表...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- JSON文件选项卡 -->
+                    <div class="tab-pane fade" id="json" role="tabpanel">
+                        <div id="jsonFileListManager">
+                            <div class="text-center py-4 text-muted">
+                                <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                                <p>加载JSON文件列表...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    关闭
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 底部JavaScript -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/js/ui-common.js"></script>
+<script src="/js/chart-utils.js"></script>
+<script>
+    // 全局变量
+    let jsonFile = null;
+    let selectedVideoTreeId = null;
+
+    // 选择工作区视频树（含「视频与数据包」导入的树）
+    function selectWorkspaceTree() {
+        const select = document.getElementById('existingVideoTreeSelect');
+        const option = select.options[select.selectedIndex];
+        selectedVideoTreeId = select.value || null;
+
+        // 与 JSON 文件选择互斥，避免重复创建视频树
+        if (selectedVideoTreeId) {
+            jsonFile = null;
+            $('#jsonFileInput').val('');
+            $('#jsonFileInfo').hide();
+        }
+
+        if (!selectedVideoTreeId) {
+            $('#videoTreeInfo').hide();
+            return;
+        }
+
+        $('#treeName').text(option.textContent);
+        $('#treeDate').text(new Date().toLocaleDateString());
+        $('#treeDesc').text(option.getAttribute('data-desc') || '来自工作区的视频树');
+        $('#treeNodeCount').text(option.getAttribute('data-count') || '—');
+        $('#videoTreeInfo').show();
+    }
+    
+    // 页面加载完成后执行
+    $(document).ready(function() {
+        // 初始化事件监听
+        initEventListeners();
+        
+        // 初始化图表
+        initCharts();
+    });
+    
+    // 初始化事件监听
+    function initEventListeners() {
+        // JSON文件上传
+        $('#jsonFileUpload').on('change', handleJsonFileUpload);
+        
+
+        
+        // JSON文件拖放
+        const dropArea = document.getElementById('jsonFileDropArea');
+        if (dropArea) {
+            dropArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropArea.classList.add('drag-over');
+            });
+            
+            dropArea.addEventListener('dragleave', () => {
+                dropArea.classList.remove('drag-over');
+            });
+            
+            dropArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropArea.classList.remove('drag-over');
+                if (e.dataTransfer.files.length > 0) {
+                    handleJsonFileInput(e.dataTransfer.files[0]);
+                }
+            });
+        }
+        
+        // JSON文件选择
+        $('#jsonFileInput').on('change', function() {
+            if (this.files.length > 0) {
+                handleJsonFileInput(this.files[0]);
+            }
+        });
+    }
+    
+    // 处理JSON文件上传
+    function handleJsonFileUpload(e) {
+        if (e.target.files.length > 0) {
+            const file = e.target.files[0];
+            uploadJsonFile(file);
+        }
+    }
+    
+    // 处理JSON文件输入
+    function handleJsonFileInput(file) {
+        if (file.type === 'application/json' || file.name.endsWith('.json')) {
+            jsonFile = file;
+            $('#jsonFileName').text(file.name);
+            $('#jsonFileInfo').show();
+        } else {
+            showNotification('错误', '请上传JSON格式的文件', 'error');
+        }
+    }
+    
+    // 移除JSON文件
+    function removeJsonFile() {
+        jsonFile = null;
+        $('#jsonFileInput').val('');
+        $('#jsonFileInfo').hide();
+    }
+    
+    // 上传JSON文件
+    function uploadJsonFile(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('teacherId', $('#teacherIdHidden').val());
+        
+        $.ajax({
+            url: '/teacher/upload-json',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            beforeSend: function() {
+                showNotification('上传中', '正在上传JSON文件...', 'info');
+            },
+            success: function(response) {
+                showNotification('成功', 'JSON文件上传成功', 'success');
+                // 刷新视频树列表
+                location.reload();
+            },
+            error: function() {
+                showNotification('错误', 'JSON文件上传失败', 'error');
+            }
+        });
+    }
+    
+
+    
+
+    
+    // 创建课堂
+    function createClassroom() {
+        const className = $('#className').val().trim();
+        if (!className) {
+            showNotification('错误', '请输入课堂名称', 'error');
+            return;
+        }
+        
+        const formData = {
+            name: className,
+            description: $('#classDescription').val().trim(),
+            teacherId: $('#teacherIdHidden').val(),
+            settings: {
+                enableDanmaku: $('#enableDanmaku').is(':checked'),
+                enableComments: $('#enableComments').is(':checked'),
+                autoJump: $('#autoJump').is(':checked'),
+                recordSession: $('#recordSession').is(':checked')
+            }
+        };
+        
+        // 根据选中的选项卡获取视频树信息
+        const activeTab = $('#videoTreeTab .nav-link.active').attr('id');
+        if (activeTab === 'upload-tab' && jsonFile) {
+            // 上传JSON文件并创建视频树
+            uploadJsonFileForClassroom(jsonFile, formData);
+            return;
+        } else if (activeTab === 'existing-tab') {
+            if (jsonFile) {
+                // 从JSON存储中选择的情况，也通过uploadJsonFileForClassroom处理
+                uploadJsonFileForClassroom(jsonFile, formData);
+                return;
+            }
+            // 直接读取下拉框当前值，避免遗漏未触发 change 的情况
+            const treeSelect = document.getElementById('existingVideoTreeSelect');
+            const treeId = (treeSelect && treeSelect.value) || selectedVideoTreeId;
+            if (!treeId) {
+                showNotification('错误', '请选择工作区中的视频树，或从JSON存储中选择', 'error');
+                return;
+            }
+            // 直接使用工作区中已持久化的视频树
+            formData.videoTreeId = treeId;
+        }
+        
+        // 发送创建课堂请求
+        $.ajax({
+            url: '/teacher/create-classroom',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(formData),
+            beforeSend: function() {
+                showNotification('创建中', '正在创建课堂...', 'info');
+            },
+            success: function(response) {
+                showNotification('成功', '课堂创建成功', 'success');
+                // 关闭模态框并刷新页面
+                $('#createClassroomModal').modal('hide');
+                location.reload();
+            },
+            error: function() {
+                showNotification('错误', '课堂创建失败', 'error');
+            }
+        });
+    }
+    
+    // 上传JSON文件并创建课堂（仅传输JSON信息，不存储到json-storage）
+    function uploadJsonFileForClassroom(file, formData) {
+        try {
+            let jsonContent;
+            
+            // 检查file是否已经包含content属性（来自selectJsonFileForClassroom）
+            if (file.content) {
+                // 直接使用已有的JSON内容
+                jsonContent = file.content;
+            } else {
+                // 读取文件内容
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        jsonContent = JSON.parse(e.target.result);
+                        formData.videoTreeJson = jsonContent;
+                        
+                        // 直接发送创建课堂请求，包含JSON内容
+                        sendCreateClassroomRequest(formData);
+                    } catch (error) {
+                        showNotification('错误', 'JSON文件解析失败', 'error');
+                    }
+                };
+                reader.readAsText(file);
+                return; // 等待文件读取完成
+            }
+            
+            // 如果已经有JSON内容，直接发送请求
+            formData.videoTreeJson = jsonContent;
+            sendCreateClassroomRequest(formData);
+        } catch (error) {
+            showNotification('错误', 'JSON文件处理失败', 'error');
+        }
+    }
+    
+    // 发送创建课堂请求
+    function sendCreateClassroomRequest(formData) {
+        $.ajax({
+            url: '/teacher/create-classroom-with-json',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(formData),
+            beforeSend: function() {
+                showNotification('创建中', '正在处理JSON文件并创建课堂...', 'info');
+            },
+            success: function(response) {
+                showNotification('成功', '课堂创建成功', 'success');
+                // 关闭模态框并刷新页面
+                $('#createClassroomModal').modal('hide');
+                location.reload();
+            },
+            error: function() {
+                showNotification('错误', '课堂创建失败', 'error');
+            }
+        });
+    }
+    
+    // 开始课堂
+    function startClass(classroomId) {
+        updateClassroomStatus(classroomId, 'active', '课堂已开始');
+    }
+    
+    // 暂停课堂
+    function pauseClass(classroomId) {
+        updateClassroomStatus(classroomId, 'paused', '课堂已暂停');
+    }
+    
+    // 结束课堂
+    function endClass(classroomId) {
+        if (confirm('确定要结束这个课堂吗？')) {
+            updateClassroomStatus(classroomId, 'ended', '课堂已结束');
+        }
+    }
+
+    // 复制链接到剪贴板
+    function copyToClipboard(text) {
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(text).then(function() {
+                showNotification('成功', '链接已复制到剪贴板', 'success');
+            }, function() {
+                fallbackCopy(text);
+            });
+        } else {
+            fallbackCopy(text);
+        }
+    }
+
+    function fallbackCopy(text) {
+        var textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            showNotification('成功', '链接已复制到剪贴板', 'success');
+        } catch (e) {
+            showNotification('错误', '复制失败，请手动复制', 'error');
+        }
+        document.body.removeChild(textarea);
+    }
+    
+    // 更新课堂状态
+    function updateClassroomStatus(classroomId, status, successMessage) {
+        $.ajax({
+            url: '/teacher/update-classroom-status/' + classroomId,
+            type: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify({ status: status }),
+            success: function() {
+                showNotification('成功', successMessage, 'success');
+                // 刷新页面
+                location.reload();
+            },
+            error: function() {
+                showNotification('错误', '更新课堂状态失败', 'error');
+            }
+        });
+    }
+    
+    // 编辑视频树
+    function editVideoTree(treeId) {
+        window.location.href = '/teacher/teacherMode?teacherId=' + $('#teacherIdHidden').val() + '&treeId=' + treeId;
+    }
+    
+    // 显示统计
+    function showStatistics() {
+        $('#statisticsModal').modal('show');
+    }
+    
+    // 显示文件管理器
+    function showFileManager() {
+        $('#fileManagerModal').modal('show');
+        loadVideoFiles();
+        loadJsonFilesForManager();
+    }
+    
+    // 显示JSON文件管理器（用于创建课堂时选择视频树）
+    function showJsonFileManager() {
+        // 创建一个新的模态框来显示JSON文件列表
+        const modalHtml = `
+            <div class="modal fade modal-create-classroom" id="jsonFileSelectorModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="fas fa-database"></i> 选择JSON文件
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div id="jsonFileListSelector">
+                                <div class="text-center py-4 text-muted">
+                                    <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                                    <p>加载JSON文件列表...</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                取消
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // 添加到页面
+        $('body').append(modalHtml);
+        
+        // 显示模态框
+        $('#jsonFileSelectorModal').modal('show');
+        
+        // 加载JSON文件列表
+        loadJsonFilesForSelector();
+        
+        // 模态框关闭时移除
+        $('#jsonFileSelectorModal').on('hidden.bs.modal', function() {
+            $(this).remove();
+        });
+    }
+    
+    // 加载JSON文件列表（用于选择器）
+    function loadJsonFilesForSelector() {
+        $.ajax({
+            url: '/teacher/json-files?teacherId=' + encodeURIComponent($('#teacherIdHidden').val()),
+            type: 'GET',
+            success: function(data) {
+                const jsonFileList = $('#jsonFileListSelector');
+                if (!data || data.length === 0) {
+                    jsonFileList.html('<div class="text-center py-4 text-muted"><i class="fas fa-file-code fa-2x mb-2"></i><p>暂无JSON文件</p></div>');
+                } else {
+                    let html = '<div class="table-responsive"><table class="table table-custom mb-0"><thead><tr><th>文件名</th><th>大小</th><th>操作</th></tr></thead><tbody>';
+                    data.forEach(file => {
+                        html += `<tr>
+                            <td>${file.fileName}</td>
+                            <td>${formatFileSize(file.size || 0)}</td>
+                            <td>
+                                <div class="btn-action-group">
+                                    <button class="btn-action btn-action-primary" onclick="selectJsonFileForClassroom('${file.fileName}')">
+                                        <i class="fas fa-check"></i> 选择
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>`;
+                    });
+                    html += '</tbody></table></div>';
+                    jsonFileList.html(html);
+                }
+            },
+            error: function() {
+                $('#jsonFileListSelector').html('<div class="text-center py-4 text-danger"><i class="fas fa-exclamation-circle fa-2x mb-2"></i><p>加载JSON文件列表失败</p></div>');
+            }
+        });
+    }
+    
+    // 选择JSON文件用于创建课堂
+    function selectJsonFileForClassroom(fileName) {
+        // 从服务器获取JSON文件内容
+        $.ajax({
+            url: '/teacher/get-json/' + encodeURIComponent(fileName),
+            type: 'GET',
+            success: function(data) {
+                if (data) {
+                    // 直接使用返回的JSON内容
+                    try {
+                        // 设置全局变量
+                        jsonFile = {
+                            name: fileName,
+                            content: data
+                        };
+                        
+                        // 更新视频树信息卡片
+                        $('#treeName').text(fileName);
+                        $('#treeDate').text(new Date().toLocaleDateString());
+                        $('#treeDesc').text('从JSON存储中选择的视频树');
+                        $('#treeNodeCount').text(data.elements ? data.elements.length : 0);
+                        $('#videoTreeInfo').show();
+                        
+                        // 关闭选择器模态框
+                        $('#jsonFileSelectorModal').modal('hide');
+                        
+                        // 显示成功消息
+                        showNotification('成功', '已选择JSON文件: ' + fileName, 'success');
+                    } catch (error) {
+                        showNotification('错误', 'JSON文件解析失败', 'error');
+                    }
+                } else {
+                    showNotification('错误', '获取JSON文件失败', 'error');
+                }
+            },
+            error: function() {
+                showNotification('错误', '获取JSON文件失败', 'error');
+            }
+        });
+    }
+    
+    // 加载视频文件列表
+    function loadVideoFiles() {
+        $.ajax({
+            url: '/video/list',
+            type: 'GET',
+            success: function(videos) {
+                const videoFileList = $('#videoFileList');
+                if (videos.length === 0) {
+                    videoFileList.html('<div class="text-center py-4 text-muted"><i class="fas fa-video fa-2x mb-2"></i><p>暂无视频文件</p></div>');
+                } else {
+                    let html = '<div class="table-responsive"><table class="table table-custom mb-0"><thead><tr><th>文件名</th><th>大小</th><th>操作</th></tr></thead><tbody>';
+                    videos.forEach(video => {
+                        html += `<tr>
+                            <td>${video.title || video.fileName}</td>
+                            <td>${formatFileSize(video.fileSize || 0)}</td>
+                            <td>
+                                <div class="btn-action-group">
+                                    <button class="btn-action btn-action-danger" onclick="deleteVideoFile('${video.fileName}')">
+                                        <i class="fas fa-trash"></i> 删除
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>`;
+                    });
+                    html += '</tbody></table></div>';
+                    videoFileList.html(html);
+                }
+            },
+            error: function() {
+                $('#videoFileList').html('<div class="text-center py-4 text-danger"><i class="fas fa-exclamation-circle fa-2x mb-2"></i><p>加载视频文件列表失败</p></div>');
+            }
+        });
+    }
+    
+    // 加载JSON文件列表（用于文件管理器）
+    function loadJsonFilesForManager() {
+        $.ajax({
+            url: '/json-storage/list?teacherId=' + encodeURIComponent($('#teacherIdHidden').val()),
+            type: 'GET',
+            success: function(data) {
+                const jsonFileList = $('#jsonFileListManager');
+                if (!data.success || data.files.length === 0) {
+                    jsonFileList.html('<div class="text-center py-4 text-muted"><i class="fas fa-file-code fa-2x mb-2"></i><p>暂无JSON文件</p></div>');
+                } else {
+                    let html = '<div class="table-responsive"><table class="table table-custom mb-0"><thead><tr><th>文件名</th><th>大小</th><th>操作</th></tr></thead><tbody>';
+                    data.files.forEach(file => {
+                        html += `<tr>
+                            <td>${file.fileName}</td>
+                            <td>${formatFileSize(file.size || 0)}</td>
+                            <td>
+                                <div class="btn-action-group">
+                                    <button class="btn-action btn-action-danger" onclick="deleteJsonFileFromStorage('${file.fileName}')">
+                                        <i class="fas fa-trash"></i> 删除
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>`;
+                    });
+                    html += '</tbody></table></div>';
+                    jsonFileList.html(html);
+                }
+            },
+            error: function() {
+                $('#jsonFileListManager').html('<div class="text-center py-4 text-danger"><i class="fas fa-exclamation-circle fa-2x mb-2"></i><p>加载JSON文件列表失败</p></div>');
+            }
+        });
+    }
+    
+    // 删除视频文件
+    function deleteVideoFile(fileName) {
+        if (confirm('确定要删除这个视频文件吗？')) {
+            $.ajax({
+                url: '/video/delete/' + encodeURIComponent(fileName),
+                type: 'DELETE',
+                success: function(response) {
+                    if (response.success) {
+                        showNotification('成功', '视频文件删除成功', 'success');
+                        loadVideoFiles();
+                    } else {
+                        showNotification('错误', '视频文件删除失败: ' + (response.error || '未知错误'), 'error');
+                    }
+                },
+                error: function() {
+                    showNotification('错误', '视频文件删除失败', 'error');
+                }
+            });
+        }
+    }
+    
+    // 从存储中删除JSON文件
+    function deleteJsonFileFromStorage(fileName) {
+        if (confirm('确定要删除这个JSON文件吗？')) {
+            $.ajax({
+                url: '/json-storage/delete',
+                type: 'POST',
+                data: { fileName: fileName },
+                success: function(response) {
+                    if (response.success) {
+                        showNotification('成功', 'JSON文件删除成功', 'success');
+                        loadJsonFilesForManager();
+                    } else {
+                        showNotification('错误', 'JSON文件删除失败: ' + (response.error || '未知错误'), 'error');
+                    }
+                },
+                error: function() {
+                    showNotification('错误', 'JSON文件删除失败', 'error');
+                }
+            });
+        }
+    }
+    
+    // 初始化图表
+    function initCharts() {
+        const ctx = document.getElementById('interactionChart');
+        if (ctx) {
+            ChartUtils.createChart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+                    datasets: [
+                        {
+                            label: '弹幕数',
+                            data: [120, 190, 150, 200, 180, 250, 220],
+                            borderColor: '#4A00E0',
+                            backgroundColor: 'rgba(74, 0, 224, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: '评论数',
+                            data: [30, 45, 35, 50, 40, 60, 55],
+                            borderColor: '#17A2B8',
+                            backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                            tension: 0.4
+                        }
+                    ]
+                }
+            });
+        }
+    }
+    
+    // 显示通知
+    function showNotification(title, message, type = 'info') {
+        UiCommon.notify(title, message, type);
+    }
+    
+    // 格式化文件大小
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+</script>
+</body>
+</html>

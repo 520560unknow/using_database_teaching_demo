@@ -1,0 +1,3076 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频树编辑器 - 基于JointJS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jointjs/3.5.0/joint.min.css">
+    <link rel="stylesheet" th:href="@{/css/cyberpunk-2077.css}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: var(--cyber-bg-dark);
+            color: var(--cyber-cyan);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .left-panel {
+            width: 220px;
+            background: var(--cyber-bg-medium);
+            border-right: 1px solid var(--cyber-cyan);
+            padding: 12px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 2px 0 15px rgba(0, 255, 255, 0.2);
+            z-index: 10;
+        }
+
+        .panel-section {
+            background: var(--cyber-bg-light);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--cyber-cyan);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
+        }
+
+        .section-title {
+            margin-bottom: 15px;
+            color: var(--cyber-cyan);
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--cyber-cyan);
+        }
+
+        .section-title i {
+            color: var(--cyber-cyan);
+            text-shadow: 0 0 5px var(--cyber-cyan);
+        }
+
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: var(--cyber-bg-dark);
+        }
+
+        #joint-canvas {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .joint-paper {
+            border: none !important;
+            background: linear-gradient(45deg, rgba(0, 255, 255, 0.05) 25%, transparent 25%),
+            linear-gradient(-45deg, rgba(0, 255, 255, 0.05) 25%, transparent 25%),
+            linear-gradient(45deg, transparent 75%, rgba(0, 255, 255, 0.05) 75%),
+            linear-gradient(-45deg, transparent 75%, rgba(0, 255, 255, 0.05) 75%);
+            background-size: 40px 40px;
+            background-position: 0 0, 0 20px, 20px -20px, -20px 0px;
+        }
+
+        .right-panel {
+            width: 240px;
+            background: var(--cyber-bg-medium);
+            border-left: 1px solid var(--cyber-cyan);
+            padding: 12px;
+            overflow-y: auto;
+            box-shadow: -2px 0 15px rgba(0, 255, 255, 0.2);
+            z-index: 10;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: var(--cyber-cyan);
+            font-size: 14px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--cyber-cyan);
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+            background: var(--cyber-bg-dark);
+            color: var(--cyber-cyan);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--cyber-green);
+            box-shadow: 0 0 0 2px rgba(0, 255, 0, 0.2);
+        }
+
+        .textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: 1px solid var(--cyber-cyan);
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-width: 100px;
+            height: 40px;
+            background: var(--cyber-bg-light);
+            color: var(--cyber-cyan);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+
+        .btn:hover {
+            background: var(--cyber-cyan);
+            color: var(--cyber-bg-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+        }
+
+        .btn-success {
+            background: var(--cyber-bg-light);
+            border-color: var(--cyber-green);
+            color: var(--cyber-green);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+        }
+
+        .btn-success:hover {
+            background: var(--cyber-green);
+            color: var(--cyber-bg-dark);
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
+        }
+
+        .btn-danger {
+            background: var(--cyber-bg-light);
+            border-color: var(--cyber-red);
+            color: var(--cyber-red);
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: var(--cyber-red);
+            color: var(--cyber-bg-dark);
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.6);
+        }
+
+        .btn-outline {
+            background: var(--cyber-bg-dark);
+            border: 1px solid var(--cyber-cyan);
+            color: var(--cyber-cyan);
+        }
+
+        .btn-outline:hover {
+            background: var(--cyber-cyan);
+            color: var(--cyber-bg-dark);
+        }
+
+        .btn-full {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, var(--cyber-bg-medium), var(--cyber-bg-dark));
+            color: var(--cyber-cyan);
+            padding: 10px 20px;
+            font-size: 14px;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--cyber-cyan);
+            box-shadow: 0 -5px 15px rgba(0, 255, 255, 0.2);
+        }
+
+        .status-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--cyber-light-gray);
+        }
+
+        .status-item i {
+            color: var(--cyber-cyan);
+            text-shadow: 0 0 5px var(--cyber-cyan);
+        }
+
+        .status-value {
+            font-weight: 600;
+            color: var(--cyber-cyan);
+        }
+
+        .toolbar {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            background: var(--cyber-bg-medium);
+            padding: 12px 15px;
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+            display: flex;
+            gap: 10px;
+            z-index: 20;
+            border: 1px solid var(--cyber-cyan);
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .tool-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            border: 2px solid var(--cyber-cyan);
+            background: var(--cyber-bg-dark);
+            color: var(--cyber-cyan);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            font-size: 16px;
+            flex-shrink: 0;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+
+        .tool-btn:hover {
+            background: var(--cyber-cyan);
+            color: var(--cyber-bg-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+        }
+
+        .tool-btn.active {
+            background: var(--cyber-cyan);
+            color: var(--cyber-bg-dark);
+            border-color: var(--cyber-cyan);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+        }
+
+        .connection-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+
+        .connection-item {
+            background: var(--cyber-bg-dark);
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid var(--cyber-cyan);
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .connection-info {
+            font-size: 13px;
+            color: var(--cyber-light-gray);
+        }
+
+        .connection-target {
+            font-weight: 500;
+            color: var(--cyber-cyan);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            background: var(--cyber-bg-dark);
+            border-radius: 6px;
+            border: 1px solid var(--cyber-cyan);
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--cyber-cyan);
+            text-shadow: 0 0 5px var(--cyber-cyan);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--cyber-gray);
+        }
+
+        .port-hint {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--cyber-green);
+            border: 2px solid var(--cyber-cyan);
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+            z-index: 100;
+            pointer-events: none;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; box-shadow: 0 0 10px rgba(0, 255, 0, 0.5); }
+            50% { transform: scale(1.3); opacity: 0.7; box-shadow: 0 0 20px rgba(0, 255, 0, 0.8); }
+            100% { transform: scale(1); opacity: 1; box-shadow: 0 0 10px rgba(0, 255, 0, 0.5); }
+        }
+
+        .connection-mode-hint {
+            position: absolute;
+            top: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--cyber-bg-light);
+            color: var(--cyber-cyan);
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 20;
+            display: none;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+            white-space: nowrap;
+            border: 1px solid var(--cyber-cyan);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 13px;
+            height: 32px;
+            min-width: 80px;
+        }
+
+        .btn-icon {
+            width: 44px;
+            min-width: 44px;
+        }
+
+        .btn-text {
+            white-space: nowrap;
+        }
+
+        .button-container {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-long {
+            min-width: 140px;
+        }
+
+        /* 新增样式：确保所有按钮清晰可见 */
+        .btn-visible {
+            opacity: 1 !important;
+            visibility: visible !important;
+            display: flex !important;
+        }
+
+        /* 改进的按钮样式 */
+        .btn-i {
+            min-width: 44px;
+            width: 44px;
+            height: 44px;
+            padding: 0;
+        }
+
+        /* 确保所有按钮在移动设备上可见 */
+        @media (max-width: 1200px) {
+            .left-panel, .right-panel {
+                width: 280px;
+            }
+            .toolbar {
+                left: 50%;
+                transform: translateX(-50%);
+                min-width: 450px;
+                padding: 12px 15px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .container {
+                flex-direction: column;
+            }
+            .left-panel, .right-panel {
+                width: 100%;
+                height: 40vh;
+                border-right: none;
+                border-bottom: 1px solid var(--cyber-cyan);
+            }
+            .canvas-container {
+                height: 60vh;
+            }
+            .toolbar {
+                left: 50%;
+                transform: translateX(-50%);
+                top: auto;
+                bottom: 20px;
+                min-width: 90%;
+                overflow-x: auto;
+                justify-content: flex-start;
+            }
+            .tool-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 14px;
+            }
+            .btn {
+                padding: 8px 12px;
+                min-width: 90px;
+                height: 36px;
+            }
+            .btn-group {
+                flex-wrap: wrap;
+            }
+            .connection-mode-hint {
+                top: auto;
+                bottom: 70px;
+                left: 50%;
+                transform: translateX(-50%);
+                white-space: normal;
+                text-align: center;
+                max-width: 90%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .toolbar {
+                padding: 10px;
+                gap: 8px;
+            }
+            .tool-btn {
+                width: 36px;
+                height: 36px;
+            }
+            .btn {
+                padding: 6px 10px;
+                font-size: 13px;
+                min-width: 80px;
+                height: 34px;
+            }
+            .btn-group {
+                flex-direction: column;
+            }
+            .btn-group .btn {
+                width: 100%;
+            }
+            .action-buttons {
+                flex-direction: column;
+            }
+            .action-buttons .btn {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .left-panel, .right-panel {
+                padding: 15px;
+            }
+            .toolbar {
+                bottom: 10px;
+                padding: 8px;
+                border-radius: 10px;
+            }
+            .tool-btn {
+                width: 34px;
+                height: 34px;
+                font-size: 12px;
+            }
+            .btn {
+                padding: 5px 8px;
+                font-size: 12px;
+                min-width: 70px;
+                height: 32px;
+            }
+            .section-title {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="left-panel">
+        <div class="panel-section">
+            <div class="section-title">
+                <i class="fas fa-plus"></i> 创建节点
+            </div>
+            <div class="form-group">
+                <label for="nodeName">节点名称</label>
+                <input type="text" id="nodeName" class="form-control" placeholder="输入节点名称">
+            </div>
+            <div class="form-group">
+                <label for="nodeDesc">节点描述</label>
+                <textarea id="nodeDesc" class="form-control textarea" placeholder="输入节点描述"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="nodeVideo">视频文件</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="nodeVideo" class="form-control" placeholder="视频文件路径" readonly>
+                    <button type="button" class="btn btn-outline" onclick="selectVideoFile()" style="white-space: nowrap;">
+                        <i class="fas fa-folder-open"></i> 选择文件
+                    </button>
+                </div>
+                <small class="form-text text-muted" style="color: #666; font-size: 12px; margin-top: 5px;">支持MP4、AVI、MOV等格式</small>
+            </div>
+            <div class="form-group">
+                <label for="nodeKeywords">关键词（用逗号分隔）</label>
+                <input type="text" id="nodeKeywords" class="form-control" placeholder="例如：物理,力学,牛顿定律">
+                <small class="form-text text-muted" style="color: #666; font-size: 12px; margin-top: 5px;">输入与视频内容相关的关键词，多个关键词用逗号分隔</small>
+            </div>
+            <button class="btn btn-primary btn-full" onclick="createNode()">
+                <i class="fas fa-plus-circle"></i> 创建新节点
+            </button>
+        </div>
+
+        <div class="panel-section">
+            <div class="section-title">
+                <i class="fas fa-sitemap"></i> 树信息
+            </div>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="nodeCount">0</div>
+                    <div class="stat-label">节点数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="connectionCount">0</div>
+                    <div class="stat-label">连接数</div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-outline action-btn" onclick="saveTree()">
+                    <i class="fas fa-save"></i> <span class="btn-text">保存</span>
+                </button>
+                <button class="btn btn-outline action-btn" onclick="loadTree()">
+                    <i class="fas fa-folder-open"></i> <span class="btn-text">加载</span>
+                </button>
+                <button class="btn btn-outline action-btn" onclick="autoLayout()">
+                    <i class="fas fa-project-diagram"></i> <span class="btn-text">布局</span>
+                </button>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-outline action-btn btn-long" onclick="exportTree()">
+                    <i class="fas fa-file-export"></i> <span class="btn-text">导出JSON</span>
+                </button>
+                <button class="btn btn-outline action-btn btn-long" onclick="importTree()">
+                    <i class="fas fa-file-import"></i> <span class="btn-text">导入JSON</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="canvas-container">
+        <div id="joint-canvas"></div>
+
+        <div class="toolbar">
+            <button class="tool-btn" onclick="setTool('select')" id="tool-select" title="选择工具 (S)">
+                <i class="fas fa-mouse-pointer"></i>
+            </button>
+            <button class="tool-btn" onclick="setTool('connect')" id="tool-connect" title="连接工具 (C)">
+                <i class="fas fa-link"></i>
+            </button>
+            <button class="tool-btn" onclick="deleteSelected()" title="删除 (Delete)">
+                <i class="fas fa-trash"></i>
+            </button>
+            <button class="tool-btn" onclick="zoomIn()" title="放大 (Ctrl+)">
+                <i class="fas fa-search-plus"></i>
+            </button>
+            <button class="tool-btn" onclick="zoomOut()" title="缩小 (Ctrl-)">
+                <i class="fas fa-search-minus"></i>
+            </button>
+            <button class="tool-btn" onclick="fitToScreen()" title="适应屏幕 (Ctrl+0)">
+                <i class="fas fa-expand"></i>
+            </button>
+            <button class="tool-btn" onclick="centerContent()" title="居中显示">
+                <i class="fas fa-crosshairs"></i>
+            </button>
+            <button class="tool-btn" onclick="resetZoom()" title="重置缩放">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+            <button class="tool-btn" onclick="showGridToggle()" title="切换网格">
+                <i class="fas fa-th"></i>
+            </button>
+            <button class="tool-btn" onclick="clearAll()" title="清空画布">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </div>
+
+        <div class="connection-mode-hint" id="connectionHint">
+            连接模式：点击源节点开始连接，再点击目标节点完成连接 (ESC取消)
+        </div>
+    </div>
+
+    <div class="right-panel">
+        <div class="panel-section">
+            <div class="section-title">
+                <i class="fas fa-edit"></i> 编辑节点
+            </div>
+            <div class="form-group">
+                <label>节点ID</label>
+                <input type="text" id="editNodeId" class="form-control" readonly>
+            </div>
+            <div class="form-group">
+                <label>节点名称</label>
+                <input type="text" id="editNodeName" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>节点描述</label>
+                <textarea id="editNodeDesc" class="form-control textarea"></textarea>
+            </div>
+            <div class="form-group">
+                <label>视频文件</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="editNodeVideo" class="form-control" readonly>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="selectVideoForEdit()" style="white-space: nowrap;">
+                        <i class="fas fa-folder-open"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>关键词（用逗号分隔）</label>
+                <input type="text" id="editNodeKeywords" class="form-control" placeholder="例如：物理,力学,牛顿定律">
+                <small class="form-text text-muted" style="color: #666; font-size: 12px; margin-top: 5px;">输入与视频内容相关的关键词，多个关键词用逗号分隔</small>
+            </div>
+
+            <div class="button-row">
+                <button class="btn btn-success" onclick="updateNode()">
+                    <i class="fas fa-save"></i> 保存
+                </button>
+                <button class="btn btn-danger" onclick="deleteNode()">
+                    <i class="fas fa-trash"></i> 删除
+                </button>
+                <button class="btn btn-outline" onclick="cloneNode()">
+                    <i class="fas fa-clone"></i> 克隆
+                </button>
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <div class="section-title">
+                <i class="fas fa-link"></i> 连接管理
+            </div>
+            <div class="connection-list" id="connectionList">
+                <div style="text-align: center; padding: 20px; color: #999;">
+                    选择节点以查看连接
+                </div>
+            </div>
+            <div class="form-group">
+                <label>连接标签</label>
+                <input type="text" id="connectionLabel" class="form-control" placeholder="连接标签" value="相关视频">
+            </div>
+            <div class="button-container">
+                <button class="btn btn-primary" onclick="startConnection()">
+                    <i class="fas fa-link"></i> 开始连接
+                </button>
+                <button class="btn btn-outline" onclick="editConnection()">
+                    <i class="fas fa-edit"></i> 编辑连接
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="status-bar" id="statusBar">
+    <div class="status-left">
+        <div class="status-item">
+            <i class="fas fa-sitemap"></i>
+            节点: <span class="status-value" id="statusNodeCount">0</span>
+        </div>
+        <div class="status-item">
+            <i class="fas fa-link"></i>
+            连接: <span class="status-value" id="statusConnectionCount">0</span>
+        </div>
+        <div class="status-item">
+            <i class="fas fa-mouse-pointer"></i>
+            工具: <span class="status-value" id="statusTool">选择</span>
+        </div>
+        <div class="status-item">
+            <i class="fas fa-expand-arrows-alt"></i>
+            缩放: <span class="status-value" id="statusZoom">100%</span>
+        </div>
+    </div>
+    <div id="statusMessage">
+        就绪 - 点击左侧创建新节点
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.4.0/backbone-min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jointjs/3.5.0/joint.min.js"></script>
+
+<script>
+    // 全局变量
+    let graph = null;
+    let paper = null;
+    let selectedCell = null;
+    let currentTool = 'select';
+    let connectionMode = false;
+    let connectionSource = null;
+    let currentNodeId = 1;
+    let currentConnectionId = 1;
+    let showGrid = true;
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        initJointJS();
+        // 不创建示例树，保持画布空白
+        updateStats();
+        updateStatus('就绪 - 点击左侧创建新节点');
+
+        setupShortcuts();
+        updateZoomDisplay();
+
+        // 确保所有按钮可见
+        ensureButtonsVisible();
+    });
+
+    // 确保所有按钮可见
+    function ensureButtonsVisible() {
+        const buttons = document.querySelectorAll('.btn, .tool-btn');
+        buttons.forEach(btn => {
+            btn.classList.add('btn-visible');
+            btn.style.opacity = '1';
+            btn.style.visibility = 'visible';
+            btn.style.display = 'flex';
+        });
+    }
+
+    // 初始化JointJS
+    function initJointJS() {
+        graph = new joint.dia.Graph({}, { cellNamespace: joint.shapes });
+
+        paper = new joint.dia.Paper({
+            el: document.getElementById('joint-canvas'),
+            model: graph,
+            width: '100%',
+            height: '100%',
+            gridSize: 10,
+            drawGrid: { name: 'mesh' },
+            background: { color: 'transparent' },
+            interactive: {
+                linkMove: false,
+                labelMove: false
+            },
+            snapLinks: { radius: 20 },
+            linkPinning: false,
+            defaultLink: new joint.shapes.standard.Link({
+                attrs: {
+                    line: {
+                        stroke: 'var(--cyber-cyan)',
+                        strokeWidth: 3,
+                        strokeDasharray: '0',
+                        targetMarker: {
+                            'type': 'path',
+                            'd': 'M 12 -6 0 0 12 6 z',
+                            fill: 'var(--cyber-cyan)',
+                            stroke: 'var(--cyber-cyan)',
+                            strokeWidth: 2
+                        },
+                        strokeLinecap: 'round',
+                        filter: 'drop-shadow(0 0 8px var(--cyber-cyan))'
+                    }
+                }
+            }),
+            validateConnection: function(cellViewS, magnetS, cellViewT, magnetT, end, linkView) {
+                if (cellViewS === cellViewT) return false;
+
+                const sourceId = cellViewS.model.id;
+                const targetId = cellViewT.model.id;
+
+                // 检查是否已经有相同的连接
+                const existingLinks = graph.getLinks().filter(link => {
+                    return link.get('source').id === sourceId &&
+                        link.get('target').id === targetId;
+                });
+
+                if (existingLinks.length > 0) {
+                    updateStatus('这两个节点已经连接', 'error');
+                    return false;
+                }
+
+                return true;
+            },
+            validateMagnet: function(cellView, magnet) {
+                return true;
+            }
+        });
+
+        // 监听元素选择
+        paper.on('cell:pointerclick', function(cellView, evt) {
+            const cell = cellView.model;
+
+            if (connectionMode && connectionSource && cell.isElement()) {
+                // 完成连接
+                completeConnection(cell);
+                return;
+            }
+
+            if (currentTool === 'select') {
+                selectCell(cell);
+
+                if (cell.isElement()) {
+                    fillEditForm(cell);
+                    updateConnectionList(cell);
+                }
+            }
+        });
+
+        // 监听空白区域点击
+        paper.on('blank:pointerclick', function(evt) {
+            if (connectionMode) {
+                cancelConnectionMode();
+            } else {
+                clearSelection();
+                clearEditForm();
+            }
+        });
+
+        // 监听元素添加
+        graph.on('add', function(cell) {
+            if (cell.isElement()) {
+                updateStats();
+            }
+        });
+
+        // 监听元素移除
+        graph.on('remove', function(cell) {
+            if (cell.isElement()) {
+                updateStats();
+            }
+        });
+
+        // 监听缩放变化
+        paper.on('scale', function() {
+            updateZoomDisplay();
+        });
+    }
+
+    // 创建示例树
+    function createSampleTree() {
+        // 清空现有数据
+        graph.clear();
+        currentNodeId = 1;
+        currentConnectionId = 1;
+
+        // 创建根节点
+        const rootNode = createNodeElement('物理入门', '物理学基础知识', '');
+        rootNode.position(400, 100);
+        graph.addCell(rootNode);
+
+        // 创建子节点
+        const node2 = createNodeElement('力学基础', '牛顿运动定律', '');
+        node2.position(250, 250);
+        graph.addCell(node2);
+
+        const node3 = createNodeElement('电磁学', '电场与磁场', '');
+        node3.position(550, 250);
+        graph.addCell(node3);
+
+        const node4 = createNodeElement('光学原理', '光的性质', '');
+        node4.position(400, 400);
+        graph.addCell(node4);
+
+        // 创建连接
+        createConnection(rootNode, node2, '力学相关');
+        createConnection(rootNode, node3, '电磁相关');
+        createConnection(node2, node4, '光学应用');
+
+        updateStats();
+        ensureButtonsVisible();
+    }
+
+    // 创建节点元素
+    function createNodeElement(name, description, videoUrl) {
+        const nodeId = `node_${currentNodeId++}`;
+
+        // 创建自定义节点
+        const node = new joint.shapes.standard.Rectangle({
+            id: nodeId,
+            position: { x: 100, y: 100 },
+            size: { width: 200, height: 110 },
+            attrs: {
+                body: {
+                    fill: 'rgba(10, 10, 20, 0.9)',
+                    stroke: 'var(--cyber-cyan)',
+                    strokeWidth: 2,
+                    rx: 8,
+                    ry: 8,
+                    cursor: 'move',
+                    boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)'
+                },
+                label: {
+                    text: name,
+                    fill: 'var(--cyber-cyan)',
+                    fontSize: 14,
+                    fontWeight: 'bold',
+                    fontFamily: 'Segoe UI, Microsoft YaHei, sans-serif',
+                    refY: 25,
+                    yAlignment: 'middle',
+                    textShadow: '0 0 5px var(--cyber-cyan)'
+                },
+                description: {
+                    text: description || '暂无描述',
+                    fill: 'var(--cyber-green)',
+                    fontSize: 12,
+                    fontFamily: 'Segoe UI, Microsoft YaHei, sans-serif',
+                    refY: 50,
+                    yAlignment: 'middle'
+                },
+                // 添加上方端口
+                topPort: {
+                    ref: 'body',
+                    refX: 0.5,
+                    refY: 0,
+                    port: 'top',
+                    r: 8,
+                    fill: '#48bb78',
+                    stroke: '#ffffff',
+                    strokeWidth: 2,
+                    magnet: true,
+                    cursor: 'pointer'
+                },
+                // 添加下方端口
+                bottomPort: {
+                    ref: 'body',
+                    refX: 0.5,
+                    refY: 1,
+                    port: 'bottom',
+                    r: 8,
+                    fill: '#667eea',
+                    stroke: '#ffffff',
+                    strokeWidth: 2,
+                    magnet: true,
+                    cursor: 'pointer'
+                }
+            },
+            ports: {
+                groups: {
+                    'top': {
+                        position: 'top',
+                        attrs: {
+                            circle: {
+                                r: 6,
+                                magnet: true,
+                                stroke: '#48bb78',
+                                strokeWidth: 2,
+                                fill: '#ffffff'
+                            }
+                        }
+                    },
+                    'bottom': {
+                        position: 'bottom',
+                        attrs: {
+                            circle: {
+                                r: 6,
+                                magnet: true,
+                                stroke: '#667eea',
+                                strokeWidth: 2,
+                                fill: '#ffffff'
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 添加上下端口
+        node.addPort({ group: 'top', id: 'top' });
+        node.addPort({ group: 'bottom', id: 'bottom' });
+
+        // 存储额外数据
+        node.set('name', name);
+        node.set('description', description || '');
+        node.set('videoUrl', videoUrl || '');
+        node.set('keywords', []);
+
+        return node;
+    }
+
+    // 创建连接
+    function createConnection(sourceNode, targetNode, label) {
+        // 检查源节点的下方端口是否已经有3个连接
+        const outgoingConnections = graph.getConnectedLinks(sourceNode, { outbound: true });
+        if (outgoingConnections.length >= 3) {
+            updateStatus('源节点已有3个出向连接', 'error');
+            return null;
+        }
+
+        // 检查目标节点的上方端口是否已经有3个连接
+        const incomingConnections = graph.getConnectedLinks(targetNode, { inbound: true });
+        if (incomingConnections.length >= 3) {
+            updateStatus('目标节点已有3个入向连接', 'error');
+            return null;
+        }
+
+        const link = new joint.shapes.standard.Link({
+            id: `conn_${currentConnectionId++}`,
+            source: {
+                id: sourceNode.id,
+                port: 'bottom',
+                selector: '.bottomPort'
+            },
+            target: {
+                id: targetNode.id,
+                port: 'top',
+                selector: '.topPort'
+            },
+            attrs: {
+                line: {
+                    stroke: 'var(--cyber-cyan)',
+                    strokeWidth: 3,
+                    strokeDasharray: '0',
+                    targetMarker: {
+                        'type': 'path',
+                        'd': 'M 12 -6 0 0 12 6 z',
+                        fill: 'var(--cyber-cyan)',
+                        stroke: 'var(--cyber-cyan)',
+                        strokeWidth: 2
+                    },
+                    strokeLinecap: 'round',
+                    filter: 'drop-shadow(0 0 8px var(--cyber-cyan))'
+                },
+                wrapper: {
+                    cursor: 'pointer'
+                }
+            },
+            labels: [{
+                position: 0.5,
+                attrs: {
+                    text: {
+                        text: label || '连接',
+                        fontSize: 12,
+                        fill: 'var(--cyber-cyan)',
+                        textShadow: '0 0 5px var(--cyber-cyan)'
+                    },
+                    rect: {
+                        fill: 'rgba(10, 10, 20, 0.8)',
+                        stroke: 'var(--cyber-cyan)',
+                        strokeWidth: 1,
+                        rx: 4,
+                        ry: 4,
+                        padding: 4
+                    }
+                }
+            }]
+        });
+
+        // 存储连接数据
+        link.set('label', label || '');
+
+        graph.addCell(link);
+        updateStats();
+
+        return link;
+    }
+
+    // 显示上传进度
+    function showUploadProgress(fileName) {
+        const progressDiv = document.createElement('div');
+        progressDiv.id = 'uploadProgress';
+        progressDiv.style.position = 'fixed';
+        progressDiv.style.top = '50%';
+        progressDiv.style.left = '50%';
+        progressDiv.style.transform = 'translate(-50%, -50%)';
+        progressDiv.style.background = 'white';
+        progressDiv.style.padding = '20px';
+        progressDiv.style.borderRadius = '8px';
+        progressDiv.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+        progressDiv.style.zIndex = '1000';
+        progressDiv.style.textAlign = 'center';
+        progressDiv.style.minWidth = '300px';
+        progressDiv.innerHTML = `
+            <h4>上传视频：${fileName}</h4>
+            <div style="margin: 15px 0;">
+                <div style="width: 100%; height: 20px; background: #f0f0f0; border-radius: 10px; overflow: hidden;">
+                    <div id="progressBar" style="width: 0%; height: 100%; background: #667eea; transition: width 0.3s;"></div>
+                </div>
+                <div id="progressText" style="margin-top: 10px; font-size: 14px; color: #666;">0%</div>
+            </div>
+            <button id="cancelUpload" class="btn btn-outline btn-sm" style="margin-top: 10px;">取消上传</button>
+        `;
+        document.body.appendChild(progressDiv);
+    }
+
+    // 隐藏上传进度
+    function hideUploadProgress() {
+        const progressDiv = document.getElementById('uploadProgress');
+        if (progressDiv) {
+            document.body.removeChild(progressDiv);
+        }
+    }
+
+    // 更新上传进度
+    function updateUploadProgress(progress) {
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        if (progressBar && progressText) {
+            progressBar.style.width = progress + '%';
+            progressText.textContent = progress.toFixed(1) + '%';
+        }
+    }
+
+    // HTTP分块上传视频（用于创建节点）
+    function selectVideoFile() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.mp4,.avi,.mov,.wmv,.mkv,.json';
+
+        input.onchange = function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // 检查是否为JSON文件
+                if (file.name.endsWith('.json')) {
+                    handleJsonUpload(file);
+                    return;
+                }
+
+                // 验证文件类型
+                if (!file.type.includes('video/') && !file.name.match(/\.(mp4|avi|mov|wmv|mkv)$/i)) {
+                    alert('请选择视频文件（MP4、AVI、MOV、WMV、MKV格式）');
+                    return;
+                }
+
+                // 从节点名称获取文件名
+                const nodeNameInput = document.getElementById('nodeName');
+                const nodeName = nodeNameInput.value.trim();
+                
+                if (!nodeName) {
+                    alert('请先填写节点名称，上传文件将使用节点名称作为文件名');
+                    hideUploadProgress();
+                    return;
+                }
+
+                // 使用节点名称作为文件名，保留原始文件的扩展名
+                const originalFileName = file.name;
+                const fileExtension = originalFileName.substring(originalFileName.lastIndexOf('.'));
+                const finalFileName = nodeName + fileExtension;
+
+                // 显示上传进度
+                showUploadProgress(finalFileName);
+
+                let cancelled = false;
+                let uploadId = '';
+                let chunkSize = 2 * 1024 * 1024; // 2MB chunks
+                let totalChunks = Math.ceil(file.size / chunkSize);
+                let uploadedChunks = 0;
+
+                // 取消上传按钮
+                document.getElementById('cancelUpload').onclick = function() {
+                    cancelled = true;
+                    hideUploadProgress();
+                };
+
+                // 初始化上传
+                fetch('/video/upload/chunk/init', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: 'fileName=' + encodeURIComponent(finalFileName) + '&fileSize=' + file.size
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.uploadId) {
+                        uploadId = data.uploadId;
+                        chunkSize = data.chunkSize || chunkSize;
+                        totalChunks = Math.ceil(file.size / chunkSize);
+                        uploadedChunks = 0;
+                        
+                        // 开始上传分块
+                        uploadChunks();
+                    } else {
+                        throw new Error(data.error || '初始化上传失败');
+                    }
+                })
+                .catch(error => {
+                    hideUploadProgress();
+                    updateStatus('上传失败: ' + error.message, 'error');
+                    console.error('初始化上传失败:', error);
+                });
+
+                // 上传分块
+                function uploadChunks() {
+                    if (cancelled) return;
+
+                    let offset = 0;
+                    let chunkIndex = 0;
+                    let activeRequests = 0;
+                    let totalUploaded = 0;
+                    let completed = false;
+                    const maxParallel = 3; // 并行上传3个分块
+
+                    function uploadNextChunk() {
+                        if (cancelled) return;
+
+                        // 检查是否所有分块都已上传完成
+                        if (totalUploaded >= totalChunks && activeRequests === 0 && !completed) {
+                            completed = true;
+                            completeUpload();
+                            return;
+                        }
+
+                        // 检查是否还有分块需要上传
+                        if (offset >= file.size) {
+                            // 如果已经没有分块需要上传，但还有活跃的请求，等待它们完成
+                            if (activeRequests > 0) {
+                                setTimeout(uploadNextChunk, 100);
+                            }
+                            return;
+                        }
+
+                        if (activeRequests >= maxParallel) {
+                            // 等待有空闲的上传槽
+                            setTimeout(uploadNextChunk, 100);
+                            return;
+                        }
+
+                        const currentChunkSize = Math.min(chunkSize, file.size - offset);
+                        const chunk = file.slice(offset, offset + currentChunkSize);
+                        const currentChunkIndex = chunkIndex;
+
+                        activeRequests++;
+                        chunkIndex++;
+                        offset += currentChunkSize;
+
+                        // 创建FormData上传分块
+                        const formData = new FormData();
+                        formData.append('uploadId', uploadId);
+                        formData.append('chunkIndex', currentChunkIndex);
+                        formData.append('totalChunks', totalChunks);
+                        formData.append('file', chunk, currentChunkIndex + '.part');
+
+                        fetch('/video/upload/chunk', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('网络错误: ' + response.status);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.success) {
+                                totalUploaded++;
+                                uploadedChunks++;
+                                const progress = (uploadedChunks / totalChunks) * 100;
+                                updateUploadProgress(progress);
+                            } else {
+                                throw new Error(data.error || '上传分块失败');
+                            }
+                        })
+                        .catch(error => {
+                            cancelled = true;
+                            hideUploadProgress();
+                            updateStatus('上传失败: ' + error.message, 'error');
+                            console.error('上传分块失败:', error);
+                            console.error('失败的分块索引:', currentChunkIndex);
+                        })
+                        .finally(() => {
+                            activeRequests--;
+                            // 继续上传下一个分块
+                            if (!cancelled) {
+                                uploadNextChunk();
+                            }
+                        });
+
+                        // 继续上传下一个分块（只有在未被取消时）
+                        if (!cancelled) {
+                            uploadNextChunk();
+                        }
+                    }
+
+                    // 开始上传
+                    uploadNextChunk();
+                }
+
+                // 完成上传
+                function completeUpload() {
+                    fetch('/video/upload/chunk/complete', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: 'uploadId=' + encodeURIComponent(uploadId) + '&fileName=' + encodeURIComponent(finalFileName) + '&fileSize=' + file.size + '&totalChunks=' + totalChunks
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            hideUploadProgress();
+                            document.getElementById('nodeVideo').value = data.fileName;
+                            document.getElementById('nodeVideo').dataset.videoUrl = data.url;
+                            document.getElementById('nodeVideo').dataset.fileName = data.fileName;
+                            updateStatus(`上传完成: ${finalFileName}`, 'success');
+
+                            // 自动填充节点名称（使用自定义文件名，去除扩展名）
+                            const nodeNameInput = document.getElementById('nodeName');
+                            if (!nodeNameInput.value.trim()) {
+                                const nameWithoutExt = finalFileName.replace(/\.[^/.]+$/, "");
+                                nodeNameInput.value = nameWithoutExt;
+                            }
+                        } else {
+                            throw new Error(data.error || '完成上传失败');
+                        }
+                    })
+                    .catch(error => {
+                        hideUploadProgress();
+                        updateStatus('上传失败: ' + error.message, 'error');
+                        console.error('完成上传失败:', error);
+                    });
+                }
+            }
+        };
+
+        input.click();
+    }
+
+    // 处理JSON文件上传
+    function handleJsonUpload(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const treeData = JSON.parse(e.target.result);
+                
+                // 查找视频文件
+                findVideosInFolder(treeData, function(foundVideos, missingVideos) {
+                    // 更新树数据，添加找到的视频
+                    updateTreeDataWithFoundVideos(treeData, foundVideos);
+                    
+                    // 显示缺失的视频，提示用户上传
+                    if (missingVideos.length > 0) {
+                        showMissingVideosDialog(missingVideos, treeData);
+                    } else {
+                        // 所有视频都已找到，直接加载树数据
+                        loadTreeData(treeData);
+                        updateStatus('所有视频已找到，树数据加载完成', 'success');
+                    }
+                });
+            } catch (error) {
+                updateStatus('JSON文件解析失败: ' + error.message, 'error');
+                console.error('JSON解析失败:', error);
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    // 查找文件夹中的视频文件
+    function findVideosInFolder(treeData, callback) {
+        const videoFolder = 'video-uploads'; // 视频上传目录
+        const foundVideos = [];
+        const missingVideos = [];
+
+        // 发送请求到后端，查找视频文件
+        fetch('/video/find', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ folder: videoFolder, treeData: treeData })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 处理找到的视频
+                if (data.foundVideos) {
+                    foundVideos.push(...data.foundVideos);
+                }
+                
+                // 处理缺失的视频
+                if (data.missingVideos) {
+                    missingVideos.push(...data.missingVideos);
+                }
+            } else {
+                console.error('查找视频失败:', data.error);
+            }
+            
+            callback(foundVideos, missingVideos);
+        })
+        .catch(error => {
+            console.error('查找视频请求失败:', error);
+            callback([], []);
+        });
+    }
+
+    // 更新树数据，添加找到的视频
+    function updateTreeDataWithFoundVideos(treeData, foundVideos) {
+        // 遍历找到的视频，更新树数据
+        foundVideos.forEach(video => {
+            // 查找对应的节点
+            const node = treeData.elements.find(el => el.name === video.nodeName);
+            if (node) {
+                node.videoUrl = video.url;
+                node.fileName = video.fileName;
+            }
+        });
+    }
+
+    // 显示缺失视频对话框
+    function showMissingVideosDialog(missingVideos, treeData) {
+        // 创建对话框
+        let dialogHTML = `
+            <div id="missingVideosDialog" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; justify-content: center; align-items: center;">
+                <div style="background: white; padding: 20px; border-radius: 8px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                    <h3 style="margin-bottom: 15px; color: #2d3748;">缺失视频文件</h3>
+                    <p style="margin-bottom: 15px; color: #666;">以下视频文件在视频目录中不存在，请上传：</p>
+                    <ul style="margin-bottom: 20px; list-style: none; padding: 0;">
+        `;
+
+        // 添加缺失视频列表
+        missingVideos.forEach(video => {
+            dialogHTML += `
+                <li style="padding: 10px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                    <span>${video.fileName}</span>
+                    <input type="file" data-node-name="${video.nodeName}" data-expected-name="${video.fileName}" class="missing-video-input" style="display: inline-block;" accept=".mp4,.avi,.mov,.wmv,.mkv">
+                </li>
+            `;
+        });
+
+        // 添加按钮
+        dialogHTML += `
+                    </ul>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button onclick="closeMissingVideosDialog()" class="btn btn-outline btn-sm">取消</button>
+                        <button onclick="uploadMissingVideos(${JSON.stringify(treeData).replace(/"/g, '&quot;')})" class="btn btn-primary btn-sm">上传并加载</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 添加到页面
+        document.body.insertAdjacentHTML('beforeend', dialogHTML);
+    }
+
+    // 上传缺失的视频
+    function uploadMissingVideos(treeData) {
+        const fileInputs = document.querySelectorAll('.missing-video-input');
+        const filesToUpload = [];
+
+        // 收集要上传的文件
+        fileInputs.forEach(input => {
+            if (input.files.length > 0) {
+                filesToUpload.push({
+                    file: input.files[0],
+                    nodeName: input.dataset.nodeName,
+                    expectedName: input.dataset.expectedName
+                });
+            }
+        });
+
+        if (filesToUpload.length > 0) {
+            // 上传文件
+            uploadFiles(filesToUpload, function(uploadedFiles) {
+                // 更新树数据，添加上传的视频
+                uploadedFiles.forEach(file => {
+                    const node = treeData.elements.find(el => el.name === file.nodeName);
+                    if (node) {
+                        node.videoUrl = file.url;
+                        node.fileName = file.fileName;
+                    }
+                });
+
+                // 加载树数据
+                loadTreeData(treeData);
+                closeMissingVideosDialog();
+                updateStatus('缺失视频已上传，树数据加载完成', 'success');
+            });
+        } else {
+            // 没有上传文件，直接加载树数据
+            loadTreeData(treeData);
+            closeMissingVideosDialog();
+            updateStatus('树数据加载完成', 'success');
+        }
+    }
+
+    // 关闭缺失视频对话框
+    function closeMissingVideosDialog() {
+        const dialog = document.getElementById('missingVideosDialog');
+        if (dialog) {
+            dialog.remove();
+        }
+    }
+
+    // 上传文件
+    function uploadFiles(files, callback) {
+        const uploadedFiles = [];
+        let uploadedCount = 0;
+
+        // 显示上传进度
+        showUploadProgress('上传缺失视频...');
+
+        files.forEach(fileInfo => {
+            const file = fileInfo.file;
+            const finalFileName = fileInfo.expectedName;
+
+            let uploadId = '';
+            let chunkSize = 2 * 1024 * 1024; // 2MB chunks
+            let totalChunks = Math.ceil(file.size / chunkSize);
+            let uploadedChunks = 0;
+
+            // 初始化上传
+            fetch('/video/upload/chunk/init', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: 'fileName=' + encodeURIComponent(finalFileName) + '&fileSize=' + file.size
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.uploadId) {
+                    uploadId = data.uploadId;
+                    chunkSize = data.chunkSize || chunkSize;
+                    totalChunks = Math.ceil(file.size / chunkSize);
+                    uploadedChunks = 0;
+                    
+                    // 开始上传分块
+                    return uploadChunks(file, uploadId, chunkSize, totalChunks);
+                } else {
+                    throw new Error(data.error || '初始化上传失败');
+                }
+            })
+            .then(() => {
+                // 完成上传
+                return fetch('/video/upload/chunk/complete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: 'uploadId=' + encodeURIComponent(uploadId) + '&fileName=' + encodeURIComponent(finalFileName) + '&fileSize=' + file.size + '&totalChunks=' + totalChunks
+                });
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    uploadedFiles.push({
+                        nodeName: fileInfo.nodeName,
+                        fileName: data.fileName,
+                        url: data.url
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('上传失败:', error);
+            })
+            .finally(() => {
+                uploadedCount++;
+                
+                // 更新进度
+                const progress = (uploadedCount / files.length) * 100;
+                updateUploadProgress(progress);
+                
+                // 所有文件上传完成
+                if (uploadedCount === files.length) {
+                    hideUploadProgress();
+                    callback(uploadedFiles);
+                }
+            });
+        });
+
+        // 上传分块
+        function uploadChunks(file, uploadId, chunkSize, totalChunks) {
+            return new Promise((resolve, reject) => {
+                let offset = 0;
+                let chunkIndex = 0;
+                let activeRequests = 0;
+                let totalUploaded = 0;
+                let completed = false;
+                const maxParallel = 3; // 并行上传3个分块
+
+                function uploadNextChunk() {
+                    // 检查是否所有分块都已上传完成
+                    if (totalUploaded >= totalChunks && activeRequests === 0 && !completed) {
+                        completed = true;
+                        resolve();
+                        return;
+                    }
+
+                    // 检查是否还有分块需要上传
+                    if (offset >= file.size) {
+                        // 如果已经没有分块需要上传，但还有活跃的请求，等待它们完成
+                        if (activeRequests > 0) {
+                            setTimeout(uploadNextChunk, 100);
+                        }
+                        return;
+                    }
+
+                    if (activeRequests >= maxParallel) {
+                        // 等待有空闲的上传槽
+                        setTimeout(uploadNextChunk, 100);
+                        return;
+                    }
+
+                    const currentChunkSize = Math.min(chunkSize, file.size - offset);
+                    const chunk = file.slice(offset, offset + currentChunkSize);
+                    const currentChunkIndex = chunkIndex;
+
+                    activeRequests++;
+                    chunkIndex++;
+                    offset += currentChunkSize;
+
+                    // 创建FormData上传分块
+                    const formData = new FormData();
+                    formData.append('uploadId', uploadId);
+                    formData.append('chunkIndex', currentChunkIndex);
+                    formData.append('totalChunks', totalChunks);
+                    formData.append('file', chunk, currentChunkIndex + '.part');
+
+                    fetch('/video/upload/chunk', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('网络错误: ' + response.status);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            totalUploaded++;
+                        } else {
+                            throw new Error(data.error || '上传分块失败');
+                        }
+                    })
+                    .catch(error => {
+                        reject(error);
+                    })
+                    .finally(() => {
+                        activeRequests--;
+                        // 继续上传下一个分块
+                        uploadNextChunk();
+                    });
+
+                    // 继续上传下一个分块
+                    uploadNextChunk();
+                }
+
+                // 开始上传
+                uploadNextChunk();
+            });
+        }
+    }
+
+    // 加载树数据
+    function loadTreeData(treeData) {
+        // 清除当前图形
+        graph.clear();
+        currentNodeId = 1;
+        currentConnectionId = 1;
+
+        // 创建节点
+        if (treeData.elements && Array.isArray(treeData.elements)) {
+            treeData.elements.forEach(elData => {
+                const node = createNodeElement(elData.name, elData.description, elData.videoUrl);
+
+                // 恢复文件信息
+                node.set('fileName', elData.fileName);
+                node.set('fileSize', elData.fileSize);
+                node.set('fileType', elData.fileType);
+                node.set('keywords', elData.keywords || []);
+
+                if (elData.position) {
+                    node.position(elData.position.x, elData.position.y);
+                } else {
+                    node.position(100 + Math.random() * 300, 100 + Math.random() * 300);
+                }
+                graph.addCell(node);
+            });
+        }
+
+        // 创建连接
+        if (treeData.links && Array.isArray(treeData.links)) {
+            treeData.links.forEach(linkData => {
+                const sourceNode = graph.getCell(linkData.source.id);
+                const targetNode = graph.getCell(linkData.target.id);
+
+                if (sourceNode && targetNode) {
+                    createConnection(sourceNode, targetNode, linkData.label || '');
+                }
+            });
+        }
+
+        updateStats();
+        updateStatus('树数据加载完成', 'success');
+        ensureButtonsVisible();
+    }
+
+    // HTTP分块上传视频（用于编辑节点）
+    function selectVideoForEdit() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.mp4,.avi,.mov,.wmv,.mkv';
+
+        input.onchange = function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (!file.type.includes('video/') && !file.name.match(/\.(mp4|avi|mov|wmv|mkv)$/i)) {
+                    alert('请选择视频文件（MP4、AVI、MOV、WMV、MKV格式）');
+                    return;
+                }
+
+                // 从节点名称获取文件名
+                const nodeNameInput = document.getElementById('editNodeName');
+                const nodeName = nodeNameInput.value.trim();
+                
+                if (!nodeName) {
+                    alert('请先填写节点名称，上传文件将使用节点名称作为文件名');
+                    hideUploadProgress();
+                    return;
+                }
+
+                // 使用节点名称作为文件名，保留原始文件的扩展名
+                const originalFileName = file.name;
+                const fileExtension = originalFileName.substring(originalFileName.lastIndexOf('.'));
+                const finalFileName = nodeName + fileExtension;
+
+                // 显示上传进度
+                showUploadProgress(finalFileName);
+
+                let cancelled = false;
+                let uploadId = '';
+                let chunkSize = 2 * 1024 * 1024; // 2MB chunks
+                let totalChunks = Math.ceil(file.size / chunkSize);
+                let uploadedChunks = 0;
+
+                // 取消上传按钮
+                document.getElementById('cancelUpload').onclick = function() {
+                    cancelled = true;
+                    hideUploadProgress();
+                };
+
+                // 初始化上传
+                fetch('/video/upload/chunk/init', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: 'fileName=' + encodeURIComponent(finalFileName) + '&fileSize=' + file.size
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.uploadId) {
+                        uploadId = data.uploadId;
+                        chunkSize = data.chunkSize || chunkSize;
+                        totalChunks = Math.ceil(file.size / chunkSize);
+                        uploadedChunks = 0;
+                        
+                        // 开始上传分块
+                        uploadChunks();
+                    } else {
+                        throw new Error(data.error || '初始化上传失败');
+                    }
+                })
+                .catch(error => {
+                    hideUploadProgress();
+                    updateStatus('上传失败: ' + error.message, 'error');
+                    console.error('初始化上传失败:', error);
+                });
+
+                // 上传分块
+                function uploadChunks() {
+                    if (cancelled) return;
+
+                    let offset = 0;
+                    let chunkIndex = 0;
+                    let activeRequests = 0;
+                    let totalUploaded = 0;
+                    let completed = false;
+                    const maxParallel = 3; // 并行上传3个分块
+
+                    function uploadNextChunk() {
+                        if (cancelled) return;
+
+                        // 检查是否所有分块都已上传完成
+                        if (totalUploaded >= totalChunks && activeRequests === 0 && !completed) {
+                            completed = true;
+                            completeUpload();
+                            return;
+                        }
+
+                        // 检查是否还有分块需要上传
+                        if (offset >= file.size) {
+                            // 如果已经没有分块需要上传，但还有活跃的请求，等待它们完成
+                            if (activeRequests > 0) {
+                                setTimeout(uploadNextChunk, 100);
+                            }
+                            return;
+                        }
+
+                        if (activeRequests >= maxParallel) {
+                            // 等待有空闲的上传槽
+                            setTimeout(uploadNextChunk, 100);
+                            return;
+                        }
+
+                        const currentChunkSize = Math.min(chunkSize, file.size - offset);
+                        const chunk = file.slice(offset, offset + currentChunkSize);
+                        const currentChunkIndex = chunkIndex;
+
+                        activeRequests++;
+                        chunkIndex++;
+                        offset += currentChunkSize;
+
+                        // 创建FormData上传分块
+                        const formData = new FormData();
+                        formData.append('uploadId', uploadId);
+                        formData.append('chunkIndex', currentChunkIndex);
+                        formData.append('totalChunks', totalChunks);
+                        formData.append('file', chunk, currentChunkIndex + '.part');
+
+                        fetch('/video/upload/chunk', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('网络错误: ' + response.status);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.success) {
+                                totalUploaded++;
+                                uploadedChunks++;
+                                const progress = (uploadedChunks / totalChunks) * 100;
+                                updateUploadProgress(progress);
+                            } else {
+                                throw new Error(data.error || '上传分块失败');
+                            }
+                        })
+                        .catch(error => {
+                            cancelled = true;
+                            hideUploadProgress();
+                            updateStatus('上传失败: ' + error.message, 'error');
+                            console.error('上传分块失败:', error);
+                            console.error('失败的分块索引:', currentChunkIndex);
+                        })
+                        .finally(() => {
+                            activeRequests--;
+                            // 继续上传下一个分块
+                            if (!cancelled) {
+                                uploadNextChunk();
+                            }
+                        });
+
+                        // 继续上传下一个分块（只有在未被取消时）
+                        if (!cancelled) {
+                            uploadNextChunk();
+                        }
+                    }
+
+                    // 开始上传
+                    uploadNextChunk();
+                }
+
+                // 完成上传
+                function completeUpload() {
+                    fetch('/video/upload/chunk/complete', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: 'uploadId=' + encodeURIComponent(uploadId) + '&fileName=' + encodeURIComponent(finalFileName) + '&fileSize=' + file.size + '&totalChunks=' + totalChunks
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            hideUploadProgress();
+                            document.getElementById('editNodeVideo').value = data.fileName;
+                            document.getElementById('editNodeVideo').dataset.videoUrl = data.url;
+                            document.getElementById('editNodeVideo').dataset.fileName = data.fileName;
+                            updateStatus(`上传完成: ${finalFileName}`, 'success');
+
+                            // 更新节点名称（使用自定义文件名，去除扩展名）
+                            const nodeNameInput = document.getElementById('editNodeName');
+                            if (nodeNameInput && !nodeNameInput.value.trim()) {
+                                const nameWithoutExt = finalFileName.replace(/\.[^/.]+$/, "");
+                                nodeNameInput.value = nameWithoutExt;
+                            }
+                        } else {
+                            throw new Error(data.error || '完成上传失败');
+                        }
+                    })
+                    .catch(error => {
+                        hideUploadProgress();
+                        updateStatus('上传失败: ' + error.message, 'error');
+                        console.error('完成上传失败:', error);
+                    });
+                }
+            }
+        };
+
+        input.click();
+    }
+
+    // 创建节点
+    function createNode() {
+        const name = document.getElementById('nodeName').value.trim();
+        const description = document.getElementById('nodeDesc').value.trim();
+        const videoInput = document.getElementById('nodeVideo');
+        const keywordsInput = document.getElementById('nodeKeywords').value.trim();
+
+        if (!name) {
+            alert('请输入节点名称，节点名称是必填项');
+            updateStatus('请输入节点名称', 'error');
+            return;
+        }
+
+        // 检查是否已经选择了视频文件
+        if (videoInput.dataset.videoUrl || videoInput.value.trim()) {
+            // 已有视频信息，直接创建节点
+            createNodeWithVideo();
+        } else {
+            // 没有视频信息，触发文件选择
+            selectVideoFileForCreation();
+        }
+
+        function selectVideoFileForCreation() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.mp4,.avi,.mov,.wmv,.mkv';
+
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    // 验证文件类型
+                    if (!file.type.includes('video/') && !file.name.match(/\.(mp4|avi|mov|wmv|mkv)$/i)) {
+                        alert('请选择视频文件（MP4、AVI、MOV、WMV、MKV格式）');
+                        return;
+                    }
+
+                    // 使用节点名称作为文件名，保留原始文件的扩展名
+                    const originalFileName = file.name;
+                    const fileExtension = originalFileName.substring(originalFileName.lastIndexOf('.'));
+                    const finalFileName = name + fileExtension;
+
+                    // 显示上传进度
+                    showUploadProgress(finalFileName);
+
+                    let cancelled = false;
+                    let uploadId = '';
+                    let chunkSize = 2 * 1024 * 1024; // 2MB chunks
+                    let totalChunks = Math.ceil(file.size / chunkSize);
+                    let uploadedChunks = 0;
+
+                    // 取消上传按钮
+                    document.getElementById('cancelUpload').onclick = function() {
+                        cancelled = true;
+                        hideUploadProgress();
+                    };
+
+                    // 初始化上传
+                    fetch('/video/upload/chunk/init', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: 'fileName=' + encodeURIComponent(finalFileName) + '&fileSize=' + file.size
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.uploadId) {
+                            uploadId = data.uploadId;
+                            chunkSize = data.chunkSize || chunkSize;
+                            totalChunks = Math.ceil(file.size / chunkSize);
+                            uploadedChunks = 0;
+                            
+                            // 开始上传分块
+                            uploadChunks();
+                        } else {
+                            throw new Error(data.error || '初始化上传失败');
+                        }
+                    })
+                    .catch(error => {
+                        hideUploadProgress();
+                        updateStatus('上传失败: ' + error.message, 'error');
+                        console.error('初始化上传失败:', error);
+                    });
+
+                    // 上传分块
+                    function uploadChunks() {
+                        if (cancelled) return;
+
+                        let offset = 0;
+                        let chunkIndex = 0;
+                        let activeRequests = 0;
+                        let totalUploaded = 0;
+                        let completed = false;
+                        const maxParallel = 3; // 并行上传3个分块
+
+                        function uploadNextChunk() {
+                            if (cancelled) return;
+
+                            // 检查是否所有分块都已上传完成
+                            if (totalUploaded >= totalChunks && activeRequests === 0 && !completed) {
+                                completed = true;
+                                completeUpload();
+                                return;
+                            }
+
+                            // 检查是否还有分块需要上传
+                            if (offset >= file.size) {
+                                // 如果已经没有分块需要上传，但还有活跃的请求，等待它们完成
+                                if (activeRequests > 0) {
+                                    setTimeout(uploadNextChunk, 100);
+                                }
+                                return;
+                            }
+
+                            if (activeRequests >= maxParallel) {
+                                // 等待有空闲的上传槽
+                                setTimeout(uploadNextChunk, 100);
+                                return;
+                            }
+
+                            const currentChunkSize = Math.min(chunkSize, file.size - offset);
+                            const chunk = file.slice(offset, offset + currentChunkSize);
+                            const currentChunkIndex = chunkIndex;
+
+                            activeRequests++;
+                            chunkIndex++;
+                            offset += currentChunkSize;
+
+                            // 创建FormData上传分块
+                            const formData = new FormData();
+                            formData.append('uploadId', uploadId);
+                            formData.append('chunkIndex', currentChunkIndex);
+                            formData.append('totalChunks', totalChunks);
+                            formData.append('file', chunk, currentChunkIndex + '.part');
+
+                            fetch('/video/upload/chunk', {
+                                method: 'POST',
+                                body: formData
+                            })
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('网络错误: ' + response.status);
+                                }
+                                return response.json();
+                            })
+                            .then(data => {
+                                if (data.success) {
+                                    totalUploaded++;
+                                    uploadedChunks++;
+                                    const progress = (uploadedChunks / totalChunks) * 100;
+                                    updateUploadProgress(progress);
+                                } else {
+                                    throw new Error(data.error || '上传分块失败');
+                                }
+                            })
+                            .catch(error => {
+                                cancelled = true;
+                                hideUploadProgress();
+                                updateStatus('上传失败: ' + error.message, 'error');
+                                console.error('上传分块失败:', error);
+                                console.error('失败的分块索引:', currentChunkIndex);
+                            })
+                            .finally(() => {
+                                activeRequests--;
+                                // 继续上传下一个分块
+                                if (!cancelled) {
+                                    uploadNextChunk();
+                                }
+                            });
+
+                            // 继续上传下一个分块（只有在未被取消时）
+                            if (!cancelled) {
+                                uploadNextChunk();
+                            }
+                        }
+
+                        // 开始上传
+                        uploadNextChunk();
+                    }
+
+                    // 完成上传
+                    function completeUpload() {
+                        fetch('/video/upload/chunk/complete', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            },
+                            body: 'uploadId=' + encodeURIComponent(uploadId) + '&fileName=' + encodeURIComponent(finalFileName) + '&fileSize=' + file.size + '&totalChunks=' + totalChunks
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                hideUploadProgress();
+                                videoInput.value = data.fileName;
+                                videoInput.dataset.videoUrl = data.url;
+                                videoInput.dataset.fileName = data.fileName;
+                                updateStatus(`上传完成: ${finalFileName}`, 'success');
+
+                                // 上传完成后创建节点
+                                createNodeWithVideo();
+                            } else {
+                                throw new Error(data.error || '完成上传失败');
+                            }
+                        })
+                        .catch(error => {
+                            hideUploadProgress();
+                            updateStatus('上传失败: ' + error.message, 'error');
+                            console.error('完成上传失败:', error);
+                        });
+                    }
+                } else {
+                    // 用户取消了文件选择
+                    updateStatus('文件选择已取消', 'info');
+                }
+            };
+
+            input.click();
+        }
+
+        function createNodeWithVideo() {
+            // 获取视频信息
+            let videoUrl = '';
+            let fileName = '';
+            let fileSize = 0;
+            let fileType = '';
+
+            if (videoInput.dataset.videoUrl) {
+                // 用户选择了文件
+                videoUrl = videoInput.dataset.videoUrl;
+                fileName = videoInput.dataset.fileName;
+            } else if (videoInput.value.trim()) {
+                // 用户手动输入了路径
+                videoUrl = videoInput.value.trim();
+                fileName = videoInput.value.split('/').pop().split('\\').pop();
+            }
+
+            const node = createNodeElement(name, description, videoUrl);
+
+            // 存储文件信息
+            node.set('fileName', fileName);
+            node.set('fileSize', fileSize);
+            node.set('fileType', fileType);
+            
+            // 存储关键词
+            let keywords = [];
+            if (keywordsInput) {
+                keywords = keywordsInput.split(',').map(keyword => keyword.trim()).filter(keyword => keyword.length > 0);
+            }
+            node.set('keywords', keywords);
+
+            // 放置到画布中央
+            const paperWidth = paper.el.clientWidth;
+            const paperHeight = paper.el.clientHeight;
+            const x = paperWidth / 2 - 90;
+            const y = paperHeight / 2 - 50;
+
+            node.position(x, y);
+            graph.addCell(node);
+
+            // 清空表单
+            document.getElementById('nodeName').value = '';
+            document.getElementById('nodeDesc').value = '';
+            document.getElementById('nodeVideo').value = '';
+            document.getElementById('nodeKeywords').value = '';
+            delete videoInput.dataset.videoUrl;
+            delete videoInput.dataset.fileName;
+
+            // 选择新节点
+            selectCell(node);
+            fillEditForm(node);
+
+            updateStatus('节点创建成功', 'success');
+            ensureButtonsVisible();
+        }
+    }
+
+    // 选择元素
+    function selectCell(cell) {
+        // 清除之前的选择
+        clearSelection();
+
+        selectedCell = cell;
+
+        // 添加选中样式
+        if (cell.isElement()) {
+            cell.attr({
+                body: {
+                    stroke: '#48bb78',
+                    strokeWidth: 3,
+                    filter: 'url(#drop-shadow)'
+                }
+            });
+        } else if (cell.isLink()) {
+            cell.attr({
+                line: {
+                    stroke: '#48bb78',
+                    strokeWidth: 3
+                }
+            });
+        }
+    }
+
+    // 清除选择
+    function clearSelection() {
+        if (selectedCell) {
+            if (selectedCell.isElement()) {
+                selectedCell.attr({
+                    body: {
+                        stroke: '#667eea',
+                        strokeWidth: 2,
+                        filter: 'none'
+                    }
+                });
+            } else if (selectedCell.isLink()) {
+                selectedCell.attr({
+                    line: {
+                        stroke: '#a0aec0',
+                        strokeWidth: 2
+                    }
+                });
+            }
+            selectedCell = null;
+        }
+    }
+
+    // 填充编辑表单
+    function fillEditForm(cell) {
+        if (!cell || !cell.isElement()) return;
+
+        document.getElementById('editNodeId').value = cell.id;
+        document.getElementById('editNodeName').value = cell.get('name') || '';
+        document.getElementById('editNodeDesc').value = cell.get('description') || '';
+
+        // 显示文件名而不是完整的URL
+        const videoUrl = cell.get('videoUrl') || '';
+        const fileName = cell.get('fileName') || '';
+        document.getElementById('editNodeVideo').value = fileName || videoUrl;
+        
+        // 显示关键词
+        const keywords = cell.get('keywords') || [];
+        document.getElementById('editNodeKeywords').value = keywords.join(', ');
+    }
+
+    // 清空编辑表单
+    function clearEditForm() {
+        document.getElementById('editNodeId').value = '';
+        document.getElementById('editNodeName').value = '';
+        document.getElementById('editNodeDesc').value = '';
+        document.getElementById('editNodeVideo').value = '';
+        document.getElementById('connectionList').innerHTML = `
+                <div style="text-align: center; padding: 20px; color: #999;">
+                    选择节点以查看连接
+                </div>
+            `;
+    }
+
+    // 更新节点
+    function updateNode() {
+        if (!selectedCell || !selectedCell.isElement()) {
+            updateStatus('请先选择节点', 'error');
+            return;
+        }
+
+        const name = document.getElementById('editNodeName').value.trim();
+        if (!name) {
+            alert('请输入节点名称，节点名称是必填项');
+            updateStatus('节点名称不能为空', 'error');
+            return;
+        }
+
+        const videoInput = document.getElementById('editNodeVideo');
+
+        // 如果用户选择了新文件
+        if (videoInput.dataset.videoUrl) {
+            selectedCell.set('videoUrl', videoInput.dataset.videoUrl);
+            selectedCell.set('fileName', videoInput.dataset.fileName);
+        } else if (videoInput.value.trim() && videoInput.value !== selectedCell.get('fileName')) {
+            // 用户输入了新路径
+            selectedCell.set('videoUrl', videoInput.value.trim());
+            selectedCell.set('fileName', videoInput.value.split('/').pop().split('\\').pop());
+        }
+
+        selectedCell.set('name', name);
+        selectedCell.set('description', document.getElementById('editNodeDesc').value);
+        
+        // 更新关键词
+        const keywordsInput = document.getElementById('editNodeKeywords').value.trim();
+        let keywords = [];
+        if (keywordsInput) {
+            keywords = keywordsInput.split(',').map(keyword => keyword.trim()).filter(keyword => keyword.length > 0);
+        }
+        selectedCell.set('keywords', keywords);
+
+        // 更新显示
+        selectedCell.attr({
+            label: { text: name },
+            description: { text: document.getElementById('editNodeDesc').value || '暂无描述' }
+        });
+
+        updateStatus('节点已更新', 'success');
+    }
+
+    // 删除节点
+    function deleteNode() {
+        if (!selectedCell) {
+            updateStatus('请先选择节点', 'error');
+            return;
+        }
+
+        if (confirm('确定要删除这个节点吗？所有相关连接也会被删除！')) {
+            graph.removeCells([selectedCell]);
+            clearEditForm();
+            updateStatus('节点已删除', 'success');
+            updateStats();
+        }
+    }
+
+    // 克隆节点
+    function cloneNode() {
+        if (!selectedCell || !selectedCell.isElement()) {
+            updateStatus('请先选择节点', 'error');
+            return;
+        }
+
+        const originalNode = selectedCell;
+        const name = originalNode.get('name') + ' - 副本';
+        const description = originalNode.get('description');
+        const videoUrl = originalNode.get('videoUrl');
+        const fileName = originalNode.get('fileName');
+
+        const newNode = createNodeElement(name, description, videoUrl);
+        newNode.set('fileName', fileName);
+
+        const position = originalNode.position();
+        newNode.position(position.x + 50, position.y + 50);
+        graph.addCell(newNode);
+
+        selectCell(newNode);
+        fillEditForm(newNode);
+        updateStatus('节点已克隆', 'success');
+    }
+
+    // 删除选中元素
+    function deleteSelected() {
+        if (!selectedCell) {
+            updateStatus('请先选择元素', 'error');
+            return;
+        }
+
+        if (selectedCell.isElement()) {
+            deleteNode();
+        } else if (selectedCell.isLink()) {
+            graph.removeCells([selectedCell]);
+            clearSelection();
+            updateStatus('连接已删除', 'success');
+            updateStats();
+        }
+    }
+
+    // 设置工具
+    function setTool(tool) {
+        currentTool = tool;
+
+        // 更新工具栏
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        if (tool === 'select') {
+            document.getElementById('tool-select').classList.add('active');
+            document.getElementById('connectionHint').style.display = 'none';
+            cancelConnectionMode();
+        } else if (tool === 'connect') {
+            document.getElementById('tool-connect').classList.add('active');
+            startConnection();
+        }
+
+        document.getElementById('statusTool').textContent =
+            tool === 'select' ? '选择' : tool === 'connect' ? '连接' : tool;
+    }
+
+    // 开始连接模式
+    function startConnection() {
+        if (connectionMode) {
+            cancelConnectionMode();
+            return;
+        }
+
+        if (!selectedCell || !selectedCell.isElement()) {
+            updateStatus('请先选择一个节点作为连接源', 'error');
+            return;
+        }
+
+        connectionMode = true;
+        connectionSource = selectedCell;
+
+        // 显示连接提示
+        document.getElementById('connectionHint').style.display = 'block';
+
+        // 高亮源节点
+        connectionSource.attr({
+            body: {
+                stroke: '#f56565',
+                strokeWidth: 3
+            }
+        });
+
+        updateStatus('点击目标节点完成连接', 'info');
+    }
+
+    // 完成连接
+    function completeConnection(targetNode) {
+        if (!connectionSource || !targetNode || !connectionMode) return;
+
+        if (connectionSource.id === targetNode.id) {
+            updateStatus('不能连接到自身', 'error');
+            return;
+        }
+
+        const label = document.getElementById('connectionLabel').value || '连接';
+        const link = createConnection(connectionSource, targetNode, label);
+
+        if (link) {
+            updateStatus('连接创建成功', 'success');
+        }
+
+        cancelConnectionMode();
+    }
+
+    // 取消连接模式
+    function cancelConnectionMode() {
+        if (connectionSource) {
+            // 恢复源节点样式
+            connectionSource.attr({
+                body: {
+                    stroke: '#667eea',
+                    strokeWidth: 2
+                }
+            });
+        }
+
+        connectionMode = false;
+        connectionSource = null;
+
+        document.getElementById('connectionHint').style.display = 'none';
+
+        setTool('select');
+    }
+
+    // 更新连接列表
+    function updateConnectionList(cell) {
+        const list = document.getElementById('connectionList');
+        list.innerHTML = '';
+
+        if (!cell || !cell.isElement()) return;
+
+        // 获取出向连接
+        const outgoingLinks = graph.getConnectedLinks(cell, { outbound: true });
+        // 获取入向连接
+        const incomingLinks = graph.getConnectedLinks(cell, { inbound: true });
+
+        if (outgoingLinks.length === 0 && incomingLinks.length === 0) {
+            list.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: #999;">
+                        此节点暂无连接
+                    </div>
+                `;
+            return;
+        }
+
+        // 显示出向连接
+        if (outgoingLinks.length > 0) {
+            outgoingLinks.forEach(link => {
+                const targetNode = graph.getCell(link.get('target').id);
+                if (targetNode) {
+                    const item = document.createElement('div');
+                    item.className = 'connection-item';
+                    item.innerHTML = `
+                            <div class="connection-info">
+                                连接到: <span class="connection-target">${targetNode.get('name')}</span>
+                            </div>
+                            <button class="btn btn-outline btn-sm" style="padding: 4px 8px; font-size: 12px;"
+                                    onclick="deleteConnection('${link.id}')">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        `;
+                    list.appendChild(item);
+                }
+            });
+        }
+
+        // 显示入向连接
+        if (incomingLinks.length > 0) {
+            incomingLinks.forEach(link => {
+                const sourceNode = graph.getCell(link.get('source').id);
+                if (sourceNode) {
+                    const item = document.createElement('div');
+                    item.className = 'connection-item';
+                    item.innerHTML = `
+                            <div class="connection-info">
+                                来自: <span class="connection-target">${sourceNode.get('name')}</span>
+                            </div>
+                        `;
+                    list.appendChild(item);
+                }
+            });
+        }
+    }
+
+    // 删除连接
+    function deleteConnection(linkId) {
+        const link = graph.getCell(linkId);
+        if (link) {
+            graph.removeCells([link]);
+
+            if (selectedCell) {
+                updateConnectionList(selectedCell);
+            }
+
+            updateStats();
+            updateStatus('连接已删除', 'success');
+        }
+    }
+
+    // 编辑连接
+    function editConnection() {
+        if (!selectedCell || !selectedCell.isLink()) {
+            updateStatus('请先选择一条连接', 'error');
+            return;
+        }
+
+        const currentLabel = selectedCell.get('label') || '';
+        const newLabel = prompt('请输入新的连接标签:', currentLabel);
+
+        if (newLabel !== null) {
+            selectedCell.set('label', newLabel);
+            selectedCell.attr({
+                labels: [{
+                    position: 0.5,
+                    attrs: {
+                        text: {
+                            text: newLabel || '连接',
+                            fontSize: 12,
+                            fill: '#2d3748'
+                        }
+                    }
+                }]
+            });
+            updateStatus('连接标签已更新', 'success');
+        }
+    }
+
+    // 自动布局
+    function autoLayout() {
+        const elements = graph.getElements();
+        if (elements.length === 0) return;
+
+        // 找出根节点（没有入向连接的节点）
+        const rootCandidates = elements.filter(node => {
+            const incomingLinks = graph.getConnectedLinks(node, { inbound: true });
+            return incomingLinks.length === 0;
+        });
+
+        const root = rootCandidates.length > 0 ? rootCandidates[0] : elements[0];
+
+        // 设置根节点位置
+        const paperWidth = paper.el.clientWidth;
+        root.position(paperWidth / 2 - 90, 100);
+
+        // 递归布局子节点
+        const visited = new Set();
+        const queue = [{ node: root, level: 0, index: 0 }];
+        visited.add(root.id);
+
+        while (queue.length > 0) {
+            const { node, level, index } = queue.shift();
+
+            // 获取子节点
+            const childLinks = graph.getConnectedLinks(node, { outbound: true });
+            const children = childLinks.map(link => graph.getCell(link.get('target').id))
+                .filter(child => child && !visited.has(child.id));
+
+            if (children.length > 0) {
+                const levelY = 100 + (level + 1) * 150;
+                const spacing = 250;
+                const startX = node.position().x + node.size().width / 2 - (children.length - 1) * spacing / 2;
+
+                children.forEach((child, i) => {
+                    child.position(startX + i * spacing, levelY);
+                    visited.add(child.id);
+                    queue.push({ node: child, level: level + 1, index: i });
+                });
+            }
+        }
+
+        // 更新连接线
+        graph.getLinks().forEach(link => {
+            link.updateVertices();
+        });
+
+        updateStatus('自动布局完成', 'success');
+    }
+
+    // 更新统计信息
+    function updateStats() {
+        const nodeCount = graph.getElements().length;
+        const connectionCount = graph.getLinks().length;
+
+        document.getElementById('nodeCount').textContent = nodeCount;
+        document.getElementById('connectionCount').textContent = connectionCount;
+        document.getElementById('statusNodeCount').textContent = nodeCount;
+        document.getElementById('statusConnectionCount').textContent = connectionCount;
+    }
+
+    // 更新缩放显示
+    function updateZoomDisplay() {
+        const scale = paper.scale();
+        const zoomPercent = Math.round(scale.sx * 100);
+        document.getElementById('statusZoom').textContent = zoomPercent + '%';
+    }
+
+    // 更新状态消息
+    function updateStatus(message, type = 'info') {
+        const statusMessage = document.getElementById('statusMessage');
+        statusMessage.textContent = message;
+
+        switch(type) {
+            case 'success':
+                statusMessage.style.color = '#48bb78';
+                break;
+            case 'error':
+                statusMessage.style.color = '#f56565';
+                break;
+            case 'warning':
+                statusMessage.style.color = '#ed8936';
+                break;
+            case 'info':
+                statusMessage.style.color = '#667eea';
+                break;
+            default:
+                statusMessage.style.color = '#cbd5e0';
+        }
+    }
+
+    // 保存树
+    function saveTree() {
+        try {
+            const elements = graph.getElements();
+            const links = graph.getLinks();
+
+            const treeData = {
+                elements: elements.map(el => ({
+                    id: el.id,
+                    name: el.get('name'),
+                    description: el.get('description'),
+                    videoUrl: el.get('videoUrl'),
+                    fileName: el.get('fileName'),
+                    fileSize: el.get('fileSize'),
+                    fileType: el.get('fileType'),
+                    keywords: el.get('keywords') || [],
+                    position: el.position(),
+                    size: el.size()
+                })),
+                links: links.map(link => ({
+                    id: link.id,
+                    source: link.get('source'),
+                    target: link.get('target'),
+                    label: link.get('label') || ''
+                })),
+                currentNodeId: currentNodeId,
+                currentConnectionId: currentConnectionId,
+                saveTime: new Date().toISOString()
+            };
+
+            localStorage.setItem('videoTreeData', JSON.stringify(treeData));
+            updateStatus('树已保存到本地存储', 'success');
+        } catch (error) {
+            console.error('保存失败:', error);
+            updateStatus('保存失败: ' + error.message, 'error');
+        }
+    }
+
+    // 加载树
+    function loadTree() {
+        const saved = localStorage.getItem('videoTreeData');
+        if (!saved) {
+            updateStatus('没有找到保存的树', 'error');
+            return;
+        }
+
+        try {
+            const treeData = JSON.parse(saved);
+
+            // 清除当前图形
+            graph.clear();
+
+            // 恢复计数器
+            currentNodeId = treeData.currentNodeId || 1;
+            currentConnectionId = treeData.currentConnectionId || 1;
+
+            // 创建节点
+            treeData.elements.forEach(elData => {
+                const node = createNodeElement(elData.name, elData.description, elData.videoUrl);
+
+                // 恢复文件信息
+                node.set('fileName', elData.fileName);
+                node.set('fileSize', elData.fileSize);
+                node.set('fileType', elData.fileType);
+                // 恢复关键词
+                node.set('keywords', elData.keywords || []);
+
+                graph.addCell(node);
+            });
+
+            // 创建连接
+            treeData.links.forEach(linkData => {
+                const link = new joint.shapes.standard.Link({
+                    id: linkData.id,
+                    source: linkData.source,
+                    target: linkData.target,
+                    attrs: linkData.attrs
+                });
+
+                link.set('label', linkData.label || '');
+
+                graph.addCell(link);
+            });
+
+            updateStats();
+            clearSelection();
+            clearEditForm();
+
+            updateStatus('树已加载', 'success');
+            ensureButtonsVisible();
+        } catch (e) {
+            updateStatus('加载失败: ' + e.message, 'error');
+        }
+    }
+
+    // 导出树
+    function exportTree() {
+        const elements = graph.getElements();
+        const links = graph.getLinks();
+
+        const treeData = {
+            metadata: {
+                name: "视频树项目",
+                created: new Date().toISOString(),
+                version: "1.0",
+                type: "video-tree"
+            },
+            elements: elements.map(el => ({
+                id: el.id,
+                name: el.get('name'),
+                description: el.get('description'),
+                videoUrl: el.get('videoUrl') || '',
+                fileName: el.get('fileName') || '',
+                fileSize: el.get('fileSize') || 0,
+                fileType: el.get('fileType') || '',
+                keywords: el.get('keywords') || [],
+                position: el.position(),
+                size: el.size()
+            })),
+            links: links.map(link => ({
+                id: link.id,
+                source: link.get('source'),
+                target: link.get('target'),
+                label: link.get('label') || ''
+            })),
+            exportTime: new Date().toISOString()
+        };
+
+        const dataStr = JSON.stringify(treeData, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+
+        const exportFileDefaultName = `视频树_${new Date().getTime()}.json`;
+
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileDefaultName);
+        document.body.appendChild(linkElement);
+        linkElement.click();
+        document.body.removeChild(linkElement);
+
+        updateStatus('视频树已导出为JSON文件', 'success');
+    }
+
+    // 导入树
+    function importTree() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json,.txt';
+
+        input.onchange = function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const treeData = JSON.parse(e.target.result);
+
+                    // 清除当前图形
+                    graph.clear();
+                    currentNodeId = 1;
+                    currentConnectionId = 1;
+
+                    // 创建节点
+                    if (treeData.elements && Array.isArray(treeData.elements)) {
+                        treeData.elements.forEach(elData => {
+                            const node = createNodeElement(elData.name, elData.description, elData.videoUrl);
+
+                            // 恢复文件信息
+                            node.set('fileName', elData.fileName);
+                            node.set('fileSize', elData.fileSize);
+                            node.set('fileType', elData.fileType);
+
+                            if (elData.position) {
+                                node.position(elData.position.x, elData.position.y);
+                            } else {
+                                node.position(100 + Math.random() * 300, 100 + Math.random() * 300);
+                            }
+                            graph.addCell(node);
+                        });
+                    }
+
+                    // 创建连接
+                    if (treeData.links && Array.isArray(treeData.links)) {
+                        treeData.links.forEach(linkData => {
+                            const sourceNode = graph.getCell(linkData.source.id);
+                            const targetNode = graph.getCell(linkData.target.id);
+
+                            if (sourceNode && targetNode) {
+                                createConnection(sourceNode, targetNode, linkData.label || '');
+                            }
+                        });
+                    }
+
+                    updateStats();
+                    updateStatus('树已从JSON文件导入', 'success');
+                    ensureButtonsVisible();
+                } catch (error) {
+                    updateStatus('导入失败: ' + error.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        };
+
+        input.click();
+    }
+
+    // 缩放功能
+    function zoomIn() {
+        const scale = paper.scale();
+        paper.scale(scale.sx * 1.2, scale.sy * 1.2);
+        updateZoomDisplay();
+    }
+
+    function zoomOut() {
+        const scale = paper.scale();
+        paper.scale(scale.sx / 1.2, scale.sy / 1.2);
+        updateZoomDisplay();
+    }
+
+    function resetZoom() {
+        paper.scale(1, 1);
+        updateZoomDisplay();
+    }
+
+    function fitToScreen() {
+        paper.scaleContentToFit();
+        updateZoomDisplay();
+    }
+
+    function centerContent() {
+        const elements = graph.getElements();
+        if (elements.length === 0) return;
+
+        const paperWidth = paper.el.clientWidth;
+        const paperHeight = paper.el.clientHeight;
+
+        // 计算所有元素的边界
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+        elements.forEach(el => {
+            const pos = el.position();
+            const size = el.size();
+            minX = Math.min(minX, pos.x);
+            minY = Math.min(minY, pos.y);
+            maxX = Math.max(maxX, pos.x + size.width);
+            maxY = Math.max(maxY, pos.y + size.height);
+        });
+
+        const contentWidth = maxX - minX;
+        const contentHeight = maxY - minY;
+        const centerX = minX + contentWidth / 2;
+        const centerY = minY + contentHeight / 2;
+
+        paper.translate(
+            paperWidth / 2 - centerX,
+            paperHeight / 2 - centerY
+        );
+
+        updateStatus('内容已居中', 'success');
+    }
+
+    function showGridToggle() {
+        showGrid = !showGrid;
+        paper.options.drawGrid = showGrid ? { name: 'mesh' } : false;
+        paper.drawGrid();
+
+        updateStatus('网格显示: ' + (showGrid ? '开启' : '关闭'), showGrid ? 'success' : 'info');
+    }
+
+    function clearAll() {
+        if (confirm('确定要清空整个画布吗？此操作不可撤销！')) {
+            graph.clear();
+            currentNodeId = 1;
+            currentConnectionId = 1;
+            clearSelection();
+            clearEditForm();
+            updateStats();
+            updateStatus('画布已清空', 'success');
+        }
+    }
+
+    // 设置快捷键
+    function setupShortcuts() {
+        document.addEventListener('keydown', function(e) {
+            switch(e.key) {
+                case 'Escape':
+                    if (connectionMode) {
+                        cancelConnectionMode();
+                    } else {
+                        clearSelection();
+                        clearEditForm();
+                    }
+                    break;
+                case 'Delete':
+                    deleteSelected();
+                    break;
+                case 's':
+                case 'S':
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        saveTree();
+                    }
+                    break;
+                case 'l':
+                case 'L':
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        loadTree();
+                    }
+                    break;
+                case '+':
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        zoomIn();
+                    }
+                    break;
+                case '-':
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        zoomOut();
+                    }
+                    break;
+                case '0':
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        fitToScreen();
+                    }
+                    break;
+                case 'c':
+                case 'C':
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        startConnection();
+                    }
+                    break;
+                case 'a':
+                case 'A':
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        autoLayout();
+                    }
+                    break;
+                case 'e':
+                case 'E':
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        exportTree();
+                    }
+                    break;
+            }
+        });
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>加入课堂 · 课堂智答</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/cyberpunk-2077.css">
+    <script src="/js/app-config.js"></script>
+    <style>
+        .join-wrap {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 28px 16px;
+        }
+
+        .join-card {
+            width: 100%;
+            max-width: 460px;
+            background: rgba(8, 10, 24, 0.9);
+            border: 1px solid rgba(0, 255, 234, 0.42);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 0 32px rgba(0, 255, 234, 0.22), 0 18px 50px rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(10px);
+        }
+
+        .join-hero {
+            padding: 30px 26px 20px;
+            text-align: center;
+            background:
+                radial-gradient(circle at 50% 0%, rgba(0, 255, 234, 0.2), transparent 68%),
+                linear-gradient(180deg, rgba(255, 0, 160, 0.08), transparent);
+        }
+
+        .join-logo {
+            width: 66px;
+            height: 66px;
+            margin: 0 auto 14px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: #04060f;
+            background: linear-gradient(135deg, #00ffea, #ff00a0);
+            box-shadow: 0 0 26px rgba(0, 255, 234, 0.55);
+        }
+
+        .join-title {
+            margin: 0;
+            font-size: 25px;
+            letter-spacing: 3px;
+            color: #00ffea;
+            text-shadow: 0 0 12px rgba(0, 255, 234, 0.6);
+        }
+
+        .join-sub {
+            margin: 8px 0 0;
+            font-size: 13px;
+            color: #9fb3d9;
+            letter-spacing: 0.5px;
+        }
+
+        .join-chips {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .join-chip {
+            font-size: 12px;
+            padding: 5px 11px;
+            border-radius: 999px;
+            color: #a7f6ff;
+            border: 1px solid rgba(0, 255, 234, 0.3);
+            background: rgba(0, 255, 234, 0.06);
+        }
+
+        .join-body {
+            padding: 4px 26px 22px;
+        }
+
+        .join-divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 16px 0 12px;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .join-divider::before,
+        .join-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(0, 255, 234, 0.16);
+        }
+
+        .join-ai-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 0, 160, 0.45);
+            color: #ff8ad4;
+            background: rgba(255, 0, 160, 0.07);
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.25s ease;
+        }
+
+        .join-ai-btn:hover {
+            background: rgba(255, 0, 160, 0.16);
+            box-shadow: 0 0 16px rgba(255, 0, 160, 0.35);
+        }
+
+        .join-ai-btn:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
+        .join-foot {
+            padding: 14px 18px 16px;
+            text-align: center;
+            font-size: 12px;
+            color: #64748b;
+            border-top: 1px solid rgba(0, 255, 234, 0.1);
+        }
+
+        .join-foot span {
+            margin-left: 8px;
+            color: #4b6478;
+        }
+
+        @media (max-width: 480px) {
+            .join-wrap { padding: 16px 12px; }
+            .join-hero { padding: 24px 18px 16px; }
+            .join-body { padding: 4px 18px 18px; }
+        }
+    </style>
+</head>
+<body class="cyber-body">
+<div class="join-wrap">
+    <div class="join-card">
+        <!-- 头部 -->
+        <div class="join-hero">
+            <div class="join-logo"><i class="fas fa-comments"></i></div>
+            <h1 class="join-title">课堂智答</h1>
+            <p class="join-sub">加入课堂实时互动，教师资料随问随答</p>
+            <div class="join-chips">
+                <span class="join-chip"><i class="fas fa-bolt"></i> 实时弹幕</span>
+                <span class="join-chip"><i class="fas fa-book-open"></i> 课件同步</span>
+                <span class="join-chip"><i class="fas fa-robot"></i> 自主学习</span>
+            </div>
+        </div>
+
+        <!-- 内容区 -->
+        <div class="join-body">
+            <form id="joinForm" onsubmit="joinClassroom(event)" class="cyber-form">
+                <!-- 课堂ID输入 -->
+                <div class="cyber-form-group">
+                    <label for="classroomId" class="cyber-form-label">
+                        <i class="fas fa-key cyber-text-cyan"></i>
+                        课堂ID
+                    </label>
+                    <input type="text"
+                           id="classroomId"
+                           class="cyber-input cyber-input-cyan"
+                           th:value="${classroomId}"
+                           placeholder="请输入老师提供的课堂ID"
+                           autocomplete="off"
+                           required
+                           maxlength="20">
+                    <div class="cyber-form-help">
+                        <i class="fas fa-info-circle cyber-text-cyan"></i>
+                        课堂ID 由老师在教师工作台生成
+                    </div>
+                </div>
+
+                <!-- 学生信息 -->
+                <div class="cyber-form-group">
+                    <label for="studentName" class="cyber-form-label">
+                        <i class="fas fa-user cyber-text-cyan"></i>
+                        你的昵称
+                    </label>
+                    <input type="text"
+                           id="studentName"
+                           class="cyber-input cyber-input-cyan"
+                           placeholder="例如：张三"
+                           autocomplete="off"
+                           required
+                           maxlength="10">
+                    <div class="cyber-form-help">
+                        <i class="fas fa-info-circle cyber-text-cyan"></i>
+                        仅用于课堂内显示，不需要真实姓名
+                    </div>
+                </div>
+
+                <!-- 加载状态 -->
+                <div class="cyber-loading" id="loading">
+                    <div class="cyber-spinner cyber-spinner-cyan"></div>
+                    <p class="cyber-text">正在连接课堂...</p>
+                </div>
+
+                <!-- 加入按钮 -->
+                <button type="submit" class="cyber-btn cyber-btn-primary cyber-btn-cyan" id="joinButton">
+                    <i class="fas fa-sign-in-alt"></i>
+                    加入课堂
+                </button>
+
+                <div class="join-divider">或</div>
+
+                <!-- 自主学习入口 -->
+                <button type="button" class="join-ai-btn" id="aiButton" onclick="enterAi()">
+                    <i class="fas fa-robot"></i>
+                    课堂智答 · 自主学习
+                </button>
+
+                <!-- 返回按钮 -->
+                <button type="button" class="cyber-btn cyber-btn-outline cyber-btn-cyan" onclick="goBack()">
+                    <i class="fas fa-arrow-left"></i>
+                    返回
+                </button>
+            </form>
+        </div>
+
+        <!-- 页脚 -->
+        <div class="join-foot">
+            课堂智答 · 学生端 <span>本地部署 · 数据不出校</span>
+        </div>
+    </div>
+</div>
+
+<!-- 通知 -->
+<div class="cyber-notification" id="notification"></div>
+
+<script>
+    // 课堂ID优先取 URL 参数，其次取上次加入记录
+    const classroomIdParam = AppConfig.param('classroomId');
+    if (classroomIdParam) {
+        document.getElementById('classroomId').value = classroomIdParam;
+    }
+
+    // 显示通知
+    function showNotification(message, type = 'info') {
+        const notification = document.getElementById('notification');
+        notification.textContent = message;
+        notification.className = `cyber-notification cyber-notification-${type}`;
+
+        // 添加显示类
+        notification.classList.add('cyber-notification-show');
+
+        // 3秒后隐藏
+        setTimeout(() => {
+            notification.style.animation = 'cyber-slide-out 0.5s ease-out forwards';
+            setTimeout(() => {
+                notification.classList.remove('cyber-notification-show');
+                notification.style.animation = '';
+            }, 500);
+        }, 3000);
+    }
+
+    // 验证表单
+    function validateForm() {
+        const classroomId = document.getElementById('classroomId').value.trim();
+        const studentName = document.getElementById('studentName').value.trim();
+        let isValid = true;
+
+        // 重置错误状态
+        document.querySelectorAll('.cyber-input').forEach(input => {
+            input.classList.remove('cyber-input-error');
+        });
+
+        // 验证课堂ID
+        if (!classroomId) {
+            document.getElementById('classroomId').classList.add('cyber-input-error');
+            showNotification('请输入课堂ID', 'error');
+            isValid = false;
+        }
+
+        // 验证学生姓名
+        if (!studentName) {
+            document.getElementById('studentName').classList.add('cyber-input-error');
+            showNotification('请输入你的昵称', 'error');
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    // 加入课堂
+    async function joinClassroom(event) {
+        event.preventDefault();
+
+        if (!validateForm()) {
+            return;
+        }
+
+        const classroomId = document.getElementById('classroomId').value.trim();
+        const studentName = document.getElementById('studentName').value.trim();
+
+        // 显示加载状态
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('joinButton').style.display = 'none';
+
+        try {
+            const res = await fetch('/api/classrooms/' + encodeURIComponent(classroomId) + '/exists');
+            const data = await res.json();
+
+            if (!data.exists) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('joinButton').style.display = 'flex';
+                showNotification('课堂不存在或已结束，请检查课堂ID', 'error');
+                return;
+            }
+
+            const studentId = 'stu_' + Date.now();
+            const studentInfo = {
+                id: studentId,
+                studentId: studentId,
+                name: studentName,
+                classroomId: classroomId,
+                joinTime: new Date().toISOString()
+            };
+
+            localStorage.setItem('studentInfo', JSON.stringify(studentInfo));
+            localStorage.setItem('classroomId', classroomId);
+
+            showNotification('加入课堂成功！正在跳转...', 'success');
+
+            // 跳转到学生课堂页面
+            setTimeout(() => {
+                window.location.href = '/student/classroom?classroomId=' + encodeURIComponent(classroomId) +
+                    '&studentId=' + encodeURIComponent(studentId) +
+                    '&studentName=' + encodeURIComponent(studentName);
+            }, 800);
+        } catch (e) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('joinButton').style.display = 'flex';
+            showNotification('无法连接服务器，请稍后重试', 'error');
+        }
+    }
+
+    // 直接进入课堂智答（自主学习），沿用已加入身份的 studentId
+    async function enterAi() {
+        const classroomId = document.getElementById('classroomId').value.trim();
+        if (!classroomId) {
+            document.getElementById('classroomId').classList.add('cyber-input-error');
+            showNotification('请先输入课堂ID', 'error');
+            return;
+        }
+
+        const btn = document.getElementById('aiButton');
+        btn.disabled = true;
+
+        try {
+            const res = await fetch('/api/classrooms/' + encodeURIComponent(classroomId) + '/exists');
+            const data = await res.json();
+
+            if (!data.exists) {
+                showNotification('课堂不存在或已结束，请检查课堂ID', 'error');
+                return;
+            }
+
+            let info = null;
+            try {
+                info = JSON.parse(localStorage.getItem('studentInfo') || 'null');
+            } catch (e) {
+                info = null;
+            }
+            const studentId = (info && info.classroomId === classroomId && info.studentId)
+                ? info.studentId
+                : 'stu_' + Date.now();
+
+            localStorage.setItem('classroomId', classroomId);
+            window.location.href = '/student/ai?classroomId=' + encodeURIComponent(classroomId) +
+                '&studentId=' + encodeURIComponent(studentId);
+        } catch (e) {
+            showNotification('无法连接服务器，请稍后重试', 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    // 返回上一页
+    function goBack() {
+        if (document.referrer) {
+            window.history.back();
+        } else {
+            window.location.href = '/';
+        }
+    }
+
+    // 检查本地存储中是否有学生信息
+    function checkExistingSession() {
+        const studentInfo = localStorage.getItem('studentInfo');
+        if (studentInfo) {
+            const info = JSON.parse(studentInfo);
+            const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+            const joinTime = new Date(info.joinTime);
+
+            // 如果是一小时内加入的，自动填充
+            if (joinTime > oneHourAgo) {
+                document.getElementById('classroomId').value = info.classroomId || '';
+                document.getElementById('studentName').value = info.name || '';
+            }
+        }
+    }
+
+    // 页面加载完成
+    document.addEventListener('DOMContentLoaded', function() {
+        checkExistingSession();
+
+        // 设置自动焦点
+        if (!document.getElementById('classroomId').value) {
+            document.getElementById('classroomId').focus();
+        } else {
+            document.getElementById('studentName').focus();
+        }
+
+        // 添加回车键提交
+        document.getElementById('joinForm').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && e.target.type !== 'textarea') {
+                e.preventDefault();
+                joinClassroom(e);
+            }
+        });
+
+        // 添加输入框实时验证
+        document.querySelectorAll('.cyber-input').forEach(input => {
+            input.addEventListener('input', function() {
+                this.classList.remove('cyber-input-error');
+            });
+        });
+    });
+
+    // 浏览器兼容性检查
+    function checkBrowserCompatibility() {
+        if (!window.WebSocket) {
+            showNotification('您的浏览器不支持WebSocket，部分功能可能无法使用', 'error');
+        }
+    }
+
+    // 初始化
+    checkBrowserCompatibility();
+</script>
+</body>
+</html>

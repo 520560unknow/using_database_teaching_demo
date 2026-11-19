@@ -1,0 +1,1874 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学生课堂</title>
+    <link rel="stylesheet" href="/css/cyberpunk-2077.css">
+    <style>
+        /* 输入框和按钮美化样式 */
+        .cyberpunk-input {
+            background: rgba(0, 0, 0, 0.8) !important;
+            border: 1px solid rgba(0, 255, 255, 0.5) !important;
+            border-radius: 4px !important;
+            padding: 12px 16px !important;
+            color: #00ffff !important;
+            font-family: 'Courier New', monospace !important;
+            font-size: 14px !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
+            width: 100% !important;
+        }
+        
+        .cyberpunk-input:focus {
+            outline: none !important;
+            border-color: #00ffff !important;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5) !important;
+            background: rgba(0, 0, 0, 0.9) !important;
+        }
+        
+        .cyberpunk-input::placeholder {
+            color: rgba(0, 255, 255, 0.5) !important;
+        }
+        
+        .cyberpunk-button {
+            padding: 12px 20px !important;
+            border: 1px solid rgba(0, 255, 255, 0.5) !important;
+            border-radius: 4px !important;
+            background: rgba(0, 0, 0, 0.8) !important;
+            color: #00ffff !important;
+            font-family: 'Courier New', monospace !important;
+            font-size: 14px !important;
+            font-weight: bold !important;
+            cursor: pointer !important;
+            transition: all 0.3s ease !important;
+            position: relative !important;
+            overflow: hidden !important;
+        }
+        
+        .cyberpunk-button::before {
+            content: '' !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: -100% !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.2), transparent) !important;
+            transition: left 0.5s ease !important;
+        }
+        
+        .cyberpunk-button:hover::before {
+            left: 100% !important;
+        }
+        
+        .cyberpunk-button:hover {
+            border-color: #00ffff !important;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5) !important;
+            transform: translateY(-2px) !important;
+        }
+        
+        .cyberpunk-button:active {
+            transform: translateY(0) !important;
+        }
+        
+        .cyberpunk-button-primary {
+            background: rgba(0, 255, 255, 0.2) !important;
+        }
+        
+        .cyberpunk-button-warning {
+            background: rgba(255, 165, 0, 0.2) !important;
+            border-color: rgba(255, 165, 0, 0.5) !important;
+            color: #ff9800 !important;
+        }
+        
+        .cyberpunk-button-warning:hover {
+            border-color: #ff9800 !important;
+            box-shadow: 0 0 20px rgba(255, 165, 0, 0.5) !important;
+        }
+        
+        .cyberpunk-button:disabled {
+            opacity: 0.5 !important;
+            cursor: not-allowed !important;
+            transform: none !important;
+        }
+        
+        .danmaku-input-area {
+            display: flex !important;
+            gap: 12px !important;
+            margin-top: 20px !important;
+            align-items: center !important;
+        }
+        
+        .comment-input-area {
+            display: flex !important;
+            gap: 12px !important;
+            margin-top: 20px !important;
+            align-items: flex-start !important;
+        }
+        
+        .send-buttons {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 10px !important;
+            min-width: 120px !important;
+        }
+        
+        .tab {
+            padding: 12px 24px !important;
+            cursor: pointer !important;
+            border-bottom: 3px solid transparent !important;
+            transition: all 0.3s ease !important;
+            color: rgba(0, 255, 255, 0.7) !important;
+            font-family: 'Courier New', monospace !important;
+            font-size: 14px !important;
+            font-weight: bold !important;
+            position: relative !important;
+        }
+        
+        .tab:hover {
+            color: #00ffff !important;
+            background: rgba(0, 255, 255, 0.1) !important;
+        }
+        
+        .tab.active {
+            color: #00ffff !important;
+            border-bottom-color: #00ffff !important;
+            background: rgba(0, 255, 255, 0.1) !important;
+        }
+        
+        .tab.active::after {
+            content: '' !important;
+            position: absolute !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 3px !important;
+            background: linear-gradient(90deg, #00ffff, transparent) !important;
+            animation: tabGlow 2s infinite !important;
+        }
+        
+        @keyframes tabGlow {
+            0% {
+                opacity: 0.5;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0.5;
+            }
+        }
+        
+        .danmaku-tips,
+        .comment-tips {
+            font-size: 12px !important;
+            color: #00ff00 !important;
+            margin-top: 10px !important;
+            text-align: center !important;
+            font-family: 'Courier New', monospace !important;
+            opacity: 0.8 !important;
+            transition: opacity 0.3s ease !important;
+        }
+        
+        .danmaku-tips:hover,
+        .comment-tips:hover {
+            opacity: 1 !important;
+        }
+        
+        /* 响应式样式 */
+        @media (max-width: 768px) {
+            .cyberpunk-card {
+                margin: 10px !important;
+                max-width: none !important;
+            }
+            
+            .header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 10px !important;
+            }
+            
+            .status-bar {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 5px !important;
+            }
+            
+            .video-container {
+                height: 250px !important;
+            }
+            
+            .danmaku-input-area,
+            .comment-input-area {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+            
+            .send-buttons {
+                flex-direction: row !important;
+                justify-content: space-between !important;
+                min-width: auto !important;
+            }
+            
+            .cyberpunk-button {
+                flex: 1 !important;
+                text-align: center !important;
+            }
+            
+            .tab {
+                padding: 8px 16px !important;
+                font-size: 12px !important;
+            }
+            
+            h1 {
+                font-size: 20px !important;
+            }
+            
+            h3 {
+                font-size: 16px !important;
+            }
+        }
+    </style>
+<script src="/js/app-config.js"></script>
+</head>
+<body>
+<div class="cyberpunk-card" style="max-width: 1200px; margin: 0 auto; margin-top: 20px;">
+        <div class="header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid rgba(0, 255, 255, 0.3);">
+                <h1>学生课堂</h1>
+                <div class="status-bar" style="display: flex; gap: 15px; align-items: center; color: #00ffff; font-family: 'Courier New', monospace; font-size: 12px;">
+                    <a th:href="@{/student/ai(classroomId=${classroomId}, studentId=${studentId})}" style="padding: 6px 12px; border: 1px solid rgba(0,255,255,0.6); color: #00ffff; text-decoration: none; font-family: 'Courier New', monospace; font-size: 12px;">自主学习</a>
+                    <div class="status-indicator" id="connectionStatus" style="width: 10px; height: 10px; border-radius: 2px; background: #00ff00; animation: pulse 2s infinite; box-shadow: 0 0 5px #00ff00;"></div>
+                    <span id="statusText">连接中...</span>
+                    <div>
+                        课堂: <strong th:text="${classroomId} ?: '未指定'">未指定</strong> |
+                        学生: <strong id="studentName" th:text="${studentName} ?: '同学'">同学</strong>
+                    </div>
+                </div>
+            </div>
+            
+
+
+    <!-- 视频播放器区域 -->
+    <div class="video-container" style="background: rgba(0, 0, 0, 0.9); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 2px; overflow: hidden; margin-bottom: 20px; position: relative; height: 400px; box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);">
+        <div class="video-placeholder" style="height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #00ffff; background: rgba(0, 0, 0, 0.9); position: relative; z-index: 1; font-family: 'Courier New', monospace;">
+            <h2 style="text-shadow: 0 0 10px rgba(0, 255, 255, 0.7); margin-bottom: 20px;">等待教师开始课程...</h2>
+            <p>课堂ID: <span th:text="${classroomId}"></span></p>
+        </div>
+
+        <!-- 视频上的弹幕轨道 -->
+        <div id="video-danmaku-track" class="video-danmaku-track" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none; z-index: 2;"></div>
+        
+        <!-- Canvas弹幕层 -->
+        <canvas id="canvasRef" class="barrage-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none;"></canvas>
+
+        <div class="video-controls" style="position: absolute; bottom: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.8); border: 1px solid rgba(255, 255, 255, 0.3); padding: 10px; border-radius: 2px; z-index: 3; color: #ffffff; font-family: 'Courier New', monospace;">
+            <button id="playBtn" onclick="playVideo()" style="display:none;">播放</button>
+            <button id="pauseBtn" onclick="pauseVideo()" style="display:none;">暂停</button>
+        </div>
+    </div>
+
+    <!-- 弹幕和评论切换标签 -->
+    <div class="tab-container" style="display: flex; margin-bottom: 20px; border-bottom: 1px solid rgba(0, 255, 255, 0.3);">
+        <div class="tab active" onclick="switchTab('danmaku')" style="padding: 10px 20px; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.3s; color: #00ffff; font-family: 'Courier New', monospace; font-size: 12px;">弹幕</div>
+        <div class="tab" onclick="switchTab('comment')" style="padding: 10px 20px; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.3s; color: #00ffff; font-family: 'Courier New', monospace; font-size: 12px;">课堂讨论</div>
+        <div class="tab" onclick="switchTab('opinion')" style="padding: 10px 20px; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.3s; color: #00ffff; font-family: 'Courier New', monospace; font-size: 12px;">发表观点</div>
+    </div>
+
+    <!-- 弹幕区域 - 简化版，只有输入框 -->
+    <div class="tab-content active" id="danmakuTab" style="display: block;">
+        <div class="danmaku-input-area" style="display: flex; gap: 10px; margin-top: 20px;">
+            <input type="text" id="danmakuInput" class="cyberpunk-input" placeholder="输入弹幕内容...（按Enter发送）" maxlength="100">
+            <button id="sendDanmaku" class="cyberpunk-button cyberpunk-button-primary" onclick="sendDanmaku()">发送弹幕</button>
+        </div>
+        <div class="danmaku-tips" style="font-size: 12px; color: #00ff00; margin-top: 8px; text-align: center; font-family: 'Courier New', monospace;">
+            弹幕将在视频上方滚动显示，按Enter键快速发送
+        </div>
+    </div>
+
+    <!-- 评论区 -->
+    <div class="cyberpunk-card tab-content" id="commentTab" style="display: none; margin-top: 20px;">
+        <div class="comment-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid rgba(0, 255, 255, 0.3);">
+            <h3><i class="fas fa-comments"></i> 课堂讨论</h3>
+            <span id="commentCount" style="color: #00ff00; font-family: 'Courier New', monospace; font-size: 12px;">0 条评论</span>
+        </div>
+
+        <!-- 评论列表 -->
+        <div class="comment-list" id="commentList" style="max-height: 300px; overflow-y: auto; margin-bottom: 20px; padding-right: 10px;">
+            <div class="comment-item system" style="margin-bottom: 15px; padding: 15px; border-radius: 2px; border-left: 4px solid #00ffff; background: rgba(0, 0, 0, 0.5); animation: fadeIn 0.3s ease-out;">
+                <div class="comment-author" style="display: flex; align-items: center; margin-bottom: 8px;">
+                    <i class="fas fa-info-circle"></i>
+                    <span class="name" style="font-weight: bold; color: #00ffff; font-family: 'Courier New', monospace;">系统</span>
+                    <span class="badge" style="margin-left: 10px; padding: 2px 8px; border-radius: 2px; font-size: 12px; background: rgba(0, 255, 255, 0.2); color: #00ffff; border: 1px solid #00ffff;">系统消息</span>
+                </div>
+                <div class="comment-content" style="color: #00ff00; line-height: 1.5; margin-bottom: 8px; font-family: 'Courier New', monospace;">欢迎参与课堂讨论！您可以在这里发表评论，与老师和同学交流。</div>
+                <div class="comment-meta" style="display: flex; justify-content: space-between; font-size: 12px; color: #00ffff; font-family: 'Courier New', monospace;">
+                    <span>现在</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 评论输入区域 -->
+        <div class="comment-input-area" style="display: flex; gap: 10px; margin-top: 20px;">
+            <textarea id="commentInput" class="cyberpunk-input" placeholder="输入您的评论...（支持多行内容，Ctrl+Enter发送）" style="min-height: 60px; resize: vertical;"></textarea>
+            <div class="send-buttons" style="display: flex; flex-direction: column; gap: 10px;">
+                <button id="toggleBroadcastMode" onclick="toggleBroadcastMode()" title="切换广播身份" class="cyberpunk-button cyberpunk-button-warning">
+                    <i class="fas fa-user-secret"></i> 切换身份
+                </button>
+                <button id="sendComment" class="cyberpunk-button cyberpunk-button-primary" onclick="sendComment()">发送评论</button>
+            </div>
+        </div>
+        <div class="comment-tips" style="font-size: 12px; color: #00ff00; margin-top: 8px; text-align: right; font-family: 'Courier New', monospace;">
+            按 Ctrl+Enter 快速发送
+        </div>
+    </div>
+
+    <!-- 观点区域 -->
+    <div class="cyberpunk-card tab-content" id="opinionTab" style="display: none; margin-top: 20px;">
+        <div class="opinion-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid rgba(0, 255, 255, 0.3);">
+            <h3><i class="fas fa-lightbulb"></i> 发表观点</h3>
+            <span id="opinionCount" style="color: #00ff00; font-family: 'Courier New', monospace; font-size: 12px;">0 条观点</span>
+        </div>
+
+        <div class="opinion-list" id="opinionList" style="max-height: 300px; overflow-y: auto; margin-bottom: 20px; padding-right: 10px;">
+            <div class="opinion-item system" style="margin-bottom: 15px; padding: 15px; border-radius: 2px; border-left: 4px solid #ff9800; background: rgba(0, 0, 0, 0.5);">
+                <div class="opinion-author" style="display: flex; align-items: center; margin-bottom: 8px;">
+                    <i class="fas fa-info-circle"></i>
+                    <span class="name" style="font-weight: bold; color: #ff9800; font-family: 'Courier New', monospace;">系统</span>
+                </div>
+                <div class="opinion-content" style="color: #00ff00; line-height: 1.5; margin-bottom: 8px; font-family: 'Courier New', monospace;">您可以在这里发表观点，老师可以看到并导出。</div>
+            </div>
+        </div>
+
+        <div class="opinion-input-area" style="margin-top: 20px;">
+            <div style="margin-bottom: 10px;">
+                <input type="text" id="opinionTitleInput" class="cyberpunk-input" placeholder="观点标题（选填）" maxlength="100" style="width: 100%;">
+            </div>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <textarea id="opinionContentInput" class="cyberpunk-input" placeholder="在此输入您的观点..." style="min-height: 80px; resize: vertical; flex: 1;"></textarea>
+                <div class="send-buttons" style="display: flex; flex-direction: column; gap: 10px;">
+                    <label style="color: #00ffff; font-family: 'Courier New', monospace; font-size: 12px; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="checkbox" id="opinionAnonymous" style="accent-color: #ff9800;">
+                        匿名
+                    </label>
+                    <button id="sendOpinion" class="cyberpunk-button cyberpunk-button-warning" onclick="sendOpinion()">发送观点</button>
+                </div>
+            </div>
+        </div>
+        <div class="opinion-tips" style="font-size: 12px; color: #00ff00; margin-top: 8px; text-align: right; font-family: 'Courier New', monospace;">
+            按 Ctrl+Enter 快速发送观点
+        </div>
+    </div>
+
+</div>
+
+<script>
+        const classroomId = "[[${classroomId}]]";
+        const studentId = "[[${studentId}]]";
+        const studentName = "[[${studentName}]]" || '同学';
+        let displayName = studentName;
+        let isAnonymousMode = false;
+
+        // WebSocket连接（实际连接由 WebSocketManager 负责）
+        let isConnected = false;
+
+        // 弹幕系统
+        let danmakuSystem = null;
+        let barrageRenderer = null;
+        let wsManager = null;
+
+        // 评论相关变量
+        let currentTab = 'danmaku';
+        let commentList = [];
+        const maxComments = 200;
+
+        // 优化：使用对象池和缓存
+        const barragePool = [];
+        const maxPoolSize = 100;
+        let videoListCache = null;
+        let videoListCacheTime = 0;
+        const videoListCacheExpiry = 5 * 60 * 1000; // 5分钟缓存
+
+        // 消息队列和批处理
+        const messageQueue = [];
+        let messageSendTimer = null;
+        const messageSendInterval = 100; // 100ms发送一次
+
+        // 评论列表管理
+        class CommentListManager {
+            constructor(container) {
+                this.container = container;
+                this.comments = [];
+            }
+            
+            setComments(comments) {
+                this.comments = comments;
+                this.render();
+            }
+            
+            addComment(comment) {
+                this.comments.push(comment);
+                this.render();
+                this.container.scrollTop = this.container.scrollHeight;
+            }
+            
+            render() {
+                this.container.innerHTML = '';
+                
+                this.comments.forEach(comment => {
+                    const element = this.createCommentElement(comment);
+                    this.container.appendChild(element);
+                });
+            }
+            
+            createCommentElement(comment) {
+                const element = document.createElement('div');
+                element.className = `comment-item ${comment.type} p-3 mb-2 rounded border-left-4 ${comment.type === 'system' ? 'border-warning bg-light' : comment.type === 'teacher' ? 'border-primary bg-info bg-opacity-10' : 'border-success bg-success bg-opacity-10'}`;
+                element.innerHTML = `
+                    <div class="comment-author d-flex align-items-center mb-2">
+                        <i class="fas fa-${comment.type === 'system' ? 'info-circle' : comment.type === 'teacher' ? 'user-tie' : 'user'} mr-2"></i>
+                        <span class="font-weight-bold">${comment.author}</span>
+                        ${comment.type === 'system' ? '<span class="ml-2 px-2 py-0.5 bg-warning text-white text-xs rounded">系统消息</span>' : ''}
+                    </div>
+                    <div class="comment-content">${comment.content}</div>
+                    <div class="comment-meta text-xs text-muted mt-2">
+                        <span>${comment.time}</span>
+                    </div>
+                `;
+                return element;
+            }
+        }
+        
+        // 全局评论列表实例
+        let commentListManager = null;
+
+        let opinionList = [];
+
+
+
+        // 弹幕渲染器类
+        class BarrageRenderer {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.barrages = [];
+                this.animationFrameId = null;
+            }
+            
+            addBarrage(barrage) {
+                this.barrages.push(barrage);
+                if (!this.animationFrameId) {
+                    this.start();
+                }
+            }
+            
+            start() {
+                if (!this.animationFrameId) {
+                    this.draw();
+                }
+            }
+            
+            stop() {
+                if (this.animationFrameId) {
+                    cancelAnimationFrame(this.animationFrameId);
+                    this.animationFrameId = null;
+                }
+            }
+            
+            draw() {
+                // 清除画布
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // 绘制并更新弹幕
+                const activeBarrages = [];
+                
+                for (const barrage of this.barrages) {
+                    // 保存当前样式
+                    this.ctx.save();
+                    
+                    // 设置弹幕样式
+                    this.ctx.font = `bold ${barrage.fontSize}px sans-serif`;
+                    this.ctx.fillStyle = barrage.color;
+                    this.ctx.strokeStyle = '#000';
+                    this.ctx.lineWidth = 3;
+                    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+                    this.ctx.shadowBlur = 2;
+                    this.ctx.shadowOffsetX = 1;
+                    this.ctx.shadowOffsetY = 1;
+                    
+                    // 计算文字宽度
+                    const textWidth = this.ctx.measureText(barrage.text).width;
+                    
+                    // 绘制文字
+                    this.ctx.strokeText(barrage.text, barrage.x, barrage.y);
+                    this.ctx.fillText(barrage.text, barrage.x, barrage.y);
+                    
+                    // 更新位置
+                    barrage.x -= barrage.speed;
+                    
+                    // 恢复样式
+                    this.ctx.restore();
+                    
+                    // 只保留在画布内的弹幕
+                    if (barrage.x > -textWidth) {
+                        activeBarrages.push(barrage);
+                    } else {
+                        // 回收弹幕对象
+                        recycleBarrageObject(barrage);
+                    }
+                }
+                
+                // 更新弹幕列表
+                this.barrages = activeBarrages;
+                
+                // 循环动画
+                this.animationFrameId = requestAnimationFrame(() => this.draw());
+            }
+            
+            clear() {
+                this.barrages = [];
+            }
+        }
+
+        // WebSocket管理器类
+        class WebSocketManager {
+            constructor(url, options = {}) {
+                this.url = url;
+                this.options = {
+                    reconnectInterval: 3000,
+                    maxReconnectAttempts: 5,
+                    ...options
+                };
+                this.ws = null;
+                this.reconnectAttempts = 0;
+                this.callbacks = {
+                    onOpen: [],
+                    onMessage: [],
+                    onClose: [],
+                    onError: []
+                };
+                this.connect();
+            }
+            
+            connect() {
+                try {
+                    this.ws = new WebSocket(this.url);
+                    
+                    this.ws.onopen = (event) => {
+                        console.log('WebSocket连接已建立');
+                        this.reconnectAttempts = 0;
+                        this.callbacks.onOpen.forEach(callback => callback(event));
+                    };
+                    
+                    this.ws.onmessage = (event) => {
+                        this.callbacks.onMessage.forEach(callback => callback(event));
+                    };
+                    
+                    this.ws.onclose = (event) => {
+                        console.log('WebSocket连接已关闭', event.code, event.reason);
+                        this.callbacks.onClose.forEach(callback => callback(event));
+                        
+                        // 尝试重新连接
+                        if (this.reconnectAttempts < this.options.maxReconnectAttempts) {
+                            this.reconnectAttempts++;
+                            console.log(`尝试重新连接 (${this.reconnectAttempts}/${this.options.maxReconnectAttempts})`);
+                            setTimeout(() => this.connect(), this.options.reconnectInterval);
+                        }
+                    };
+                    
+                    this.ws.onerror = (error) => {
+                        console.error('WebSocket错误:', error);
+                        this.callbacks.onError.forEach(callback => callback(error));
+                    };
+                } catch (error) {
+                    console.error('WebSocket连接失败:', error);
+                    this.callbacks.onError.forEach(callback => callback(error));
+                }
+            }
+            
+            send(data) {
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify(data));
+                    return true;
+                }
+                return false;
+            }
+            
+            on(event, callback) {
+                if (this.callbacks[event]) {
+                    this.callbacks[event].push(callback);
+                }
+            }
+            
+            close() {
+                if (this.ws) {
+                    this.ws.close();
+                }
+            }
+        }
+
+        // 获取弹幕对象
+        function getBarrageObject() {
+            if (barragePool.length > 0) {
+                return barragePool.pop();
+            }
+            return {
+                text: '',
+                x: 0,
+                y: 0,
+                speed: 0,
+                color: '',
+                fontSize: 0,
+                mode: 0
+            };
+        }
+
+        // 回收弹幕对象
+        function recycleBarrageObject(barrage) {
+            if (barragePool.length < maxPoolSize) {
+                barrage.text = '';
+                barrage.x = 0;
+                barrage.y = 0;
+                barrage.speed = 0;
+                barrage.color = '';
+                barrage.fontSize = 0;
+                barrage.mode = 0;
+                barragePool.push(barrage);
+            }
+        }
+
+        // 添加消息到队列
+        function addToMessageQueue(type, data) {
+            messageQueue.push({ type, ...data });
+            
+            // 清除之前的定时器
+            if (messageSendTimer) {
+                clearTimeout(messageSendTimer);
+            }
+            
+            // 设置新的定时器
+            messageSendTimer = setTimeout(() => {
+                sendMessageBatch();
+            }, messageSendInterval);
+        }
+
+        // 批量发送消息
+        function sendMessageBatch() {
+            if (wsManager && messageQueue.length > 0) {
+                // 批量发送消息
+                const batchMessage = {
+                    type: 'BATCH_MESSAGES',
+                    messages: messageQueue
+                };
+                wsManager.send(batchMessage);
+                console.log('批量发送WebSocket消息:', messageQueue.length, '条');
+                
+                // 清空队列
+                messageQueue.length = 0;
+            }
+        }
+
+        // 显示消息
+        function showMessage(message) {
+            console.log(message);
+        }
+
+    // 弹幕系统类
+    class VideoDanmakuSystem {
+        constructor(videoContainer) {
+            this.videoContainer = videoContainer;
+            this.track = document.getElementById('video-danmaku-track');
+            this.danmakuList = [];
+            this.activeDanmaku = [];
+            this.maxDanmaku = 12;
+            this.danmakuSpeed = 20000;
+            this.tracks = 8;
+            this.trackPositions = [];
+            this.colors = [
+                '#FF6B6B', '#4ECDC4', '#FFD93D', '#6BCF7F',
+                '#A68BFF', '#FF9A76', '#FF4081', '#18FFFF',
+                '#FFEB3B', '#00BCD4', '#9C27B0', '#8BC34A'
+            ];
+
+            this.initTracks();
+        }
+
+        // 初始化轨道
+        initTracks() {
+            const containerHeight = this.videoContainer.clientHeight;
+            const trackHeight = containerHeight / this.tracks;
+
+            this.trackPositions = [];
+            for (let i = 0; i < this.tracks; i++) {
+                this.trackPositions.push({
+                    y: i * trackHeight + trackHeight / 2,
+                    occupied: false,
+                    endTime: 0
+                });
+            }
+        }
+
+        // 获取可用轨道
+        getAvailableTrack() {
+            const now = Date.now();
+            const availableTracks = this.trackPositions
+                .map((track, index) => ({...track, index}))
+                .filter(track => !track.occupied || track.endTime < now);
+
+            if (availableTracks.length === 0) {
+                return Math.floor(Math.random() * this.tracks);
+            }
+
+            return availableTracks[Math.floor(Math.random() * availableTracks.length)].index;
+        }
+
+        // 创建弹幕
+        createDanmaku(text, options = {}) {
+            const {
+                type = 'student',
+                sender = '匿名',
+                color = null
+            } = options;
+
+            // 检查是否超过最大同时显示数量
+            if (this.activeDanmaku.length >= this.maxDanmaku) {
+                console.log('弹幕数量已达上限，跳过显示');
+                return null;
+            }
+
+            // 获取可用轨道
+            const trackIndex = this.getAvailableTrack();
+            const track = this.trackPositions[trackIndex];
+
+            // 创建弹幕元素
+            const danmakuElement = document.createElement('div');
+            danmakuElement.className = `danmaku-item danmaku-${type}`;
+            // 学生弹幕只显示内容，不显示名字
+            danmakuElement.textContent = type === 'student' ? text : (sender ? `${sender}: ${text}` : text);
+
+            // 设置颜色和样式
+            if (type === 'teacher') {
+                danmakuElement.style.background = 'rgba(244, 67, 54, 0.7)';
+                danmakuElement.style.border = '2px solid rgba(255, 255, 255, 0.6)';
+                danmakuElement.style.boxShadow = '0 0 10px rgba(244, 67, 54, 0.7)';
+            } else if (type === 'student') {
+                danmakuElement.style.background = 'rgba(76, 175, 80, 0.7)';
+                danmakuElement.style.border = '1px solid rgba(76, 175, 80, 0.9)';
+                danmakuElement.style.color = color || this.colors[Math.floor(Math.random() * this.colors.length)];
+            } else if (type === 'system') {
+                danmakuElement.style.background = 'rgba(255, 152, 0, 0.7)';
+                danmakuElement.style.border = '1px solid rgba(255, 152, 0, 0.9)';
+            }
+
+            // 设置位置
+            danmakuElement.style.top = `${track.y}px`;
+
+            // 设置动画
+            const speed = this.danmakuSpeed * (0.8 + Math.random() * 0.4);
+            danmakuElement.style.animationDuration = `${speed}ms`;
+            danmakuElement.classList.add('scrolling');
+
+            // 添加到轨道
+            this.track.appendChild(danmakuElement);
+
+            // 占用轨道
+            this.trackPositions[trackIndex].occupied = true;
+            this.trackPositions[trackIndex].endTime = Date.now() + speed;
+
+            // 存储活动弹幕
+            const activeDanmaku = {
+                element: danmakuElement,
+                track: trackIndex,
+                endTime: Date.now() + speed
+            };
+
+            this.activeDanmaku.push(activeDanmaku);
+
+            // 动画结束后清理
+            setTimeout(() => {
+                if (danmakuElement.parentNode) {
+                    danmakuElement.remove();
+                }
+
+                // 从活动弹幕中移除
+                const index = this.activeDanmaku.indexOf(activeDanmaku);
+                if (index > -1) {
+                    this.activeDanmaku.splice(index, 1);
+                }
+
+                // 释放轨道
+                if (Date.now() >= this.trackPositions[trackIndex].endTime) {
+                    this.trackPositions[trackIndex].occupied = false;
+                }
+            }, speed);
+
+            // 添加到内存中的弹幕列表（仅用于管理，不显示在页面上）
+            const danmaku = {
+                id: Date.now() + Math.random(),
+                text: text,
+                sender: sender,
+                type: type,
+                color: color || this.colors[Math.floor(Math.random() * this.colors.length)],
+                timestamp: Date.now()
+            };
+
+            this.danmakuList.push(danmaku);
+
+            // 限制列表长度
+            if (this.danmakuList.length > 100) {
+                this.danmakuList.shift();
+            }
+
+            return danmaku;
+        }
+
+        // 清空所有弹幕
+        clearAll() {
+            this.activeDanmaku.forEach(danmaku => {
+                if (danmaku.element.parentNode) {
+                    danmaku.element.remove();
+                }
+            });
+
+            this.activeDanmaku = [];
+            this.trackPositions.forEach(track => {
+                track.occupied = false;
+            });
+        }
+    }
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("课堂已就绪:", classroomId);
+
+        if (!classroomId || classroomId === "未指定") {
+            showError("缺少课堂ID，请通过正确的方式进入课堂");
+            return;
+        }
+
+
+
+        // 初始化Canvas
+        const canvasRef = document.getElementById('canvasRef');
+        if (canvasRef) {
+            const container = canvasRef.parentElement;
+            canvasRef.width = container.clientWidth;
+            canvasRef.height = container.clientHeight;
+            console.log('Canvas尺寸:', canvasRef.width, 'x', canvasRef.height);
+            
+            // 创建弹幕渲染器
+            barrageRenderer = new BarrageRenderer(canvasRef);
+            barrageRenderer.start();
+        }
+
+        // 初始化评论列表管理器
+        const commentListElement = document.getElementById('commentList');
+        if (commentListElement) {
+            commentListManager = new CommentListManager(commentListElement);
+            console.log('评论列表管理器初始化完成');
+        }
+
+        // 构建WebSocket URL
+        const wsUrl = AppConfig.ws('/ws/student/' + classroomId + '?studentId=' + encodeURIComponent(studentId));
+        console.log("WebSocket URL:", wsUrl);
+
+        // 创建WebSocket管理器
+        wsManager = new WebSocketManager(wsUrl);
+        
+        // 注册WebSocket事件
+        wsManager.on('onOpen', () => {
+            console.log('WebSocket连接已建立');
+            isConnected = true;
+            updateConnectionStatus(true, "已连接到课堂");
+            
+            // 发送加入消息
+            sendMessage({
+                type: "STUDENT_JOIN",
+                data: {
+                    studentId: studentId,
+                    classroomId: classroomId,
+                    timestamp: Date.now()
+                }
+            });
+        });
+        
+        wsManager.on('onMessage', (event) => {
+            try {
+                const message = JSON.parse(event.data);
+                console.log("收到消息:", message);
+                handleMessage(message);
+            } catch (e) {
+                console.error("消息解析错误:", e);
+            }
+        });
+        
+        wsManager.on('onClose', () => {
+            console.log('WebSocket连接已关闭');
+            isConnected = false;
+            updateConnectionStatus(false, "连接已断开");
+        });
+        
+        wsManager.on('onError', (error) => {
+            console.error('WebSocket错误:', error);
+            updateConnectionStatus(false, "连接错误");
+        });
+
+        // 设置心跳
+        setInterval(() => {
+            if (wsManager) {
+                sendMessage({
+                    type: "HEARTBEAT",
+                    data: {
+                        studentId: studentId,
+                        timestamp: Date.now()
+                    }
+                });
+            }
+        }, 30000);
+
+        // 初始化评论计数
+        updateCommentCount();
+
+        // 添加键盘事件监听
+        setupKeyboardShortcuts();
+
+        // 添加窗口大小变化监听
+        window.addEventListener('resize', function() {
+            if (canvasRef) {
+                const container = canvasRef.parentElement;
+                canvasRef.width = container.clientWidth;
+                canvasRef.height = container.clientHeight;
+            }
+        });
+    });
+
+    // 初始化弹幕系统
+    function initDanmakuSystem() {
+        const videoContainer = document.querySelector('.video-container');
+        if (videoContainer) {
+            danmakuSystem = new VideoDanmakuSystem(videoContainer);
+
+            // 添加系统欢迎弹幕
+            setTimeout(() => {
+                danmakuSystem.createDanmaku('欢迎来到课堂！弹幕将在这里显示', {
+                    type: 'system',
+                    sender: '系统'
+                });
+            }, 500);
+        }
+    }
+
+    // 发送消息
+    function sendMessage(message) {
+        if (wsManager) {
+            const result = wsManager.send(message);
+            if (result) {
+                console.log(`发送: ${message.type}`);
+            } else {
+                console.error("无法发送消息，连接未就绪");
+            }
+            return result;
+        } else {
+            console.error("WebSocket管理器未初始化");
+            return false;
+        }
+    }
+
+    // 消息禁用状态
+    let isDanmakuDisabled = false;
+    let isCommentsDisabled = false;
+    let isAllMessagesDisabled = false;
+
+    // 处理收到的消息
+    function handleMessage(message) {
+        console.log(`收到: ${message.type}`);
+
+        switch (message.type) {
+            case "WELCOME":
+                showSuccess("连接成功！欢迎加入课堂");
+                break;
+
+            case "CLASS_STARTED":
+                showSuccess("教师已开始课堂");
+                if (barrageRenderer) {
+                    const canvasRef = document.getElementById('canvasRef');
+                    if (canvasRef) {
+                        // 创建系统弹幕
+                        const barrage = getBarrageObject();
+                        barrage.text = '教师开始了课堂';
+                        barrage.x = canvasRef.width;
+                        barrage.y = 50 + Math.random() * (canvasRef.height - 100);
+                        barrage.speed = 1.5 + Math.random() * 1;
+                        barrage.color = '#FF9800';
+                        barrage.fontSize = 20;
+                        barrage.mode = 1;
+                        barrageRenderer.addBarrage(barrage);
+                    } else {
+                        console.warn('Canvas元素不存在，无法显示系统弹幕');
+                    }
+                } else {
+                    console.warn('Canvas未初始化，无法显示系统弹幕');
+                }
+                break;
+
+            case "TEACHER_DANMAKU":
+                showTeacherDanmaku(message.data);
+                break;
+
+            case "DANMAKU_RECEIVED":
+                showStudentDanmaku(message.data);
+                break;
+
+            case "DANMAKU_SENT_SUCCESS":
+                showSuccess("弹幕发送成功");
+                document.getElementById('danmakuInput').value = '';
+                break;
+
+            case "COMMENT_RECEIVED":
+            case "NEW_COMMENT":
+                handleCommentReceived(message);
+                break;
+
+            case "COMMENT_SENT_SUCCESS":
+                showSuccess("评论发送成功");
+                break;
+
+            case "OPINION_RECEIVED":
+                handleOpinionReceived(message);
+                break;
+
+            case "OPINION_SENT_SUCCESS":
+                showSuccess("观点发送成功");
+                document.getElementById('opinionTitleInput').value = '';
+                document.getElementById('opinionContentInput').value = '';
+                break;
+
+            case "TEACHER_VIDEO_STATUS":
+                handleVideoStatus(message.data);
+                break;
+
+            case "TEACHER_VIDEO_JUMP":
+                handleVideoJump(message.data);
+                break;
+
+            case "CLASS_ENDED":
+                showWarning("课堂已结束");
+                if (barrageRenderer) {
+                    const canvasRef = document.getElementById('canvasRef');
+                    if (canvasRef) {
+                        // 创建系统弹幕
+                        const barrage = getBarrageObject();
+                        barrage.text = '课堂已结束';
+                        barrage.x = canvasRef.width;
+                        barrage.y = 50 + Math.random() * (canvasRef.height - 100);
+                        barrage.speed = 1.5 + Math.random() * 1;
+                        barrage.color = '#FF9800';
+                        barrage.fontSize = 20;
+                        barrage.mode = 1;
+                        barrageRenderer.addBarrage(barrage);
+                    } else {
+                        console.warn('Canvas元素不存在，无法显示系统弹幕');
+                    }
+                } else {
+                    console.warn('Canvas未初始化，无法显示系统弹幕');
+                }
+                break;
+
+            case "STUDENT_HEARTBEAT":
+                console.log("收到学生心跳消息:", message);
+                // 心跳消息不需要特殊处理，只是确认学生在线
+                break;
+
+            case "TOGGLE_STUDENT_DANMAKU":
+                handleToggleDanmaku(message.data);
+                break;
+
+            case "TOGGLE_STUDENT_COMMENTS":
+                handleToggleComments(message.data);
+                break;
+
+            case "TOGGLE_STUDENT_ALL_MESSAGES":
+                handleToggleAllMessages(message.data);
+                break;
+
+            case "ERROR":
+                showError(message.message || "发生错误");
+                break;
+
+            default:
+                console.log("未知消息类型:", message.type);
+        }
+    }
+
+
+
+    // 处理弹幕禁用状态
+    function handleToggleDanmaku(data) {
+        isDanmakuDisabled = data.disabled || false;
+        updateInputStates();
+        
+        if (isDanmakuDisabled) {
+            showWarning("教师已禁止发送弹幕");
+            if (barrageRenderer) {
+                const canvasRef = document.getElementById('canvasRef');
+                if (canvasRef) {
+                    // 创建系统弹幕
+                    const barrage = getBarrageObject();
+                    barrage.text = '教师已禁止发送弹幕';
+                    barrage.x = canvasRef.width;
+                    barrage.y = 50 + Math.random() * (canvasRef.height - 100);
+                    barrage.speed = 1.5 + Math.random() * 1;
+                    barrage.color = '#FF9800';
+                    barrage.fontSize = 20;
+                    barrage.mode = 1;
+                    barrageRenderer.addBarrage(barrage);
+                } else {
+                    console.warn('Canvas元素不存在，无法显示系统弹幕');
+                }
+            } else {
+                console.warn('Canvas未初始化，无法显示系统弹幕');
+            }
+        } else {
+            showSuccess("教师已允许发送弹幕");
+            if (barrageRenderer) {
+                const canvasRef = document.getElementById('canvasRef');
+                if (canvasRef) {
+                    // 创建系统弹幕
+                    const barrage = getBarrageObject();
+                    barrage.text = '教师已允许发送弹幕';
+                    barrage.x = canvasRef.width;
+                    barrage.y = 50 + Math.random() * (canvasRef.height - 100);
+                    barrage.speed = 1.5 + Math.random() * 1;
+                    barrage.color = '#FF9800';
+                    barrage.fontSize = 20;
+                    barrage.mode = 1;
+                    barrageRenderer.addBarrage(barrage);
+                } else {
+                    console.warn('Canvas元素不存在，无法显示系统弹幕');
+                }
+            } else {
+                console.warn('Canvas未初始化，无法显示系统弹幕');
+            }
+        }
+    }
+
+    // 处理评论禁用状态
+    function handleToggleComments(data) {
+        isCommentsDisabled = data.disabled || false;
+        updateInputStates();
+        
+        if (isCommentsDisabled) {
+            showWarning("教师已禁止发送评论");
+            if (barrageRenderer) {
+                const canvasRef = document.getElementById('canvasRef');
+                if (canvasRef) {
+                    // 创建系统弹幕
+                    const barrage = getBarrageObject();
+                    barrage.text = '教师已禁止发送评论';
+                    barrage.x = canvasRef.width;
+                    barrage.y = 50 + Math.random() * (canvasRef.height - 100);
+                    barrage.speed = 1.5 + Math.random() * 1;
+                    barrage.color = '#FF9800';
+                    barrage.fontSize = 20;
+                    barrage.mode = 1;
+                    barrageRenderer.addBarrage(barrage);
+                } else {
+                    console.warn('Canvas元素不存在，无法显示系统弹幕');
+                }
+            } else {
+                console.warn('Canvas未初始化，无法显示系统弹幕');
+            }
+        } else {
+            showSuccess("教师已允许发送评论");
+            if (barrageRenderer) {
+                const canvasRef = document.getElementById('canvasRef');
+                if (canvasRef) {
+                    // 创建系统弹幕
+                    const barrage = getBarrageObject();
+                    barrage.text = '教师已允许发送评论';
+                    barrage.x = canvasRef.width;
+                    barrage.y = 50 + Math.random() * (canvasRef.height - 100);
+                    barrage.speed = 1.5 + Math.random() * 1;
+                    barrage.color = '#FF9800';
+                    barrage.fontSize = 20;
+                    barrage.mode = 1;
+                    barrageRenderer.addBarrage(barrage);
+                } else {
+                    console.warn('Canvas元素不存在，无法显示系统弹幕');
+                }
+            } else {
+                console.warn('Canvas未初始化，无法显示系统弹幕');
+            }
+        }
+    }
+
+    // 处理所有消息禁用状态
+    function handleToggleAllMessages(data) {
+        isAllMessagesDisabled = data.disabled || false;
+        updateInputStates();
+        
+        if (isAllMessagesDisabled) {
+            showWarning("教师已禁止发送任何消息");
+            if (barrageRenderer) {
+                const canvasRef = document.getElementById('canvasRef');
+                if (canvasRef) {
+                    // 创建系统弹幕
+                    const barrage = getBarrageObject();
+                    barrage.text = '教师已禁止发送任何消息';
+                    barrage.x = canvasRef.width;
+                    barrage.y = 50 + Math.random() * (canvasRef.height - 100);
+                    barrage.speed = 1.5 + Math.random() * 1;
+                    barrage.color = '#FF9800';
+                    barrage.fontSize = 20;
+                    barrage.mode = 1;
+                    barrageRenderer.addBarrage(barrage);
+                } else {
+                    console.warn('Canvas元素不存在，无法显示系统弹幕');
+                }
+            } else {
+                console.warn('Canvas未初始化，无法显示系统弹幕');
+            }
+        } else {
+            showSuccess("教师已允许发送消息");
+            if (barrageRenderer) {
+                const canvasRef = document.getElementById('canvasRef');
+                if (canvasRef) {
+                    // 创建系统弹幕
+                    const barrage = getBarrageObject();
+                    barrage.text = '教师已允许发送消息';
+                    barrage.x = canvasRef.width;
+                    barrage.y = 50 + Math.random() * (canvasRef.height - 100);
+                    barrage.speed = 1.5 + Math.random() * 1;
+                    barrage.color = '#FF9800';
+                    barrage.fontSize = 20;
+                    barrage.mode = 1;
+                    barrageRenderer.addBarrage(barrage);
+                } else {
+                    console.warn('Canvas元素不存在，无法显示系统弹幕');
+                }
+            } else {
+                console.warn('Canvas未初始化，无法显示系统弹幕');
+            }
+        }
+    }
+
+    // 更新输入框状态
+    function updateInputStates() {
+        const danmakuInput = document.getElementById('danmakuInput');
+        const danmakuButton = document.getElementById('sendDanmaku');
+        const commentInput = document.getElementById('commentInput');
+        const commentButton = document.getElementById('sendComment');
+        
+        // 检查是否禁用所有消息
+        const disableAll = isAllMessagesDisabled;
+        
+        // 更新弹幕输入状态
+        const disableDanmaku = disableAll || isDanmakuDisabled;
+        if (danmakuInput) {
+            danmakuInput.disabled = disableDanmaku;
+            danmakuInput.placeholder = disableDanmaku ? "教师已禁止发送弹幕" : "输入弹幕内容...（按Enter发送）";
+        }
+        if (danmakuButton) {
+            danmakuButton.disabled = disableDanmaku;
+        }
+        
+        // 更新评论输入状态
+        const disableComments = disableAll || isCommentsDisabled;
+        if (commentInput) {
+            commentInput.disabled = disableComments;
+            commentInput.placeholder = disableComments ? "教师已禁止发送评论" : "输入您的评论...（支持多行内容，Ctrl+Enter发送）";
+        }
+        if (commentButton) {
+            commentButton.disabled = disableComments;
+        }
+    }
+
+    // 切换标签页
+    function switchTab(tabName) {
+        currentTab = tabName;
+
+        // 更新标签样式
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+
+        // 根据标签文本找到对应的标签
+        const tabElements = document.querySelectorAll('.tab');
+        tabElements.forEach(tab => {
+            if (tabName === 'danmaku' && tab.textContent.includes('弹幕')) {
+                tab.classList.add('active');
+            } else if (tabName === 'comment' && tab.textContent.includes('课堂讨论')) {
+                tab.classList.add('active');
+            } else if (tabName === 'opinion' && tab.textContent.includes('观点')) {
+                tab.classList.add('active');
+            }
+        });
+
+        // 更新内容显示
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+            content.style.display = 'none';
+        });
+        const activeTab = document.getElementById(tabName + 'Tab');
+        activeTab.classList.add('active');
+        activeTab.style.display = 'block';
+
+        // 自动聚焦到输入框
+        if (tabName === 'danmaku') {
+            document.getElementById('danmakuInput').focus();
+        } else if (tabName === 'opinion') {
+            document.getElementById('opinionContentInput').focus();
+        } else {
+            document.getElementById('commentInput').focus();
+        }
+    }
+
+    // 发送弹幕
+    function sendDanmaku() {
+        const input = document.getElementById('danmakuInput');
+        const content = input.value.trim();
+        const button = document.getElementById('sendDanmaku');
+
+        if (!content) {
+            showError("请输入弹幕内容");
+            return;
+        }
+
+        if (!isConnected) {
+            showError("未连接到课堂，无法发送弹幕");
+            return;
+        }
+
+        // 检查消息是否被禁用
+        if (isAllMessagesDisabled || isDanmakuDisabled) {
+            showError("消息已被禁用，无法发送弹幕");
+            return;
+        }
+
+        // 先本地显示（提升用户体验）
+        if (barrageRenderer) {
+            // 创建弹幕对象
+            const barrage = getBarrageObject();
+            barrage.text = content;
+            barrage.x = document.getElementById('canvasRef').width;
+            barrage.y = 50 + Math.random() * (document.getElementById('canvasRef').height - 100);
+            barrage.speed = 1.5 + Math.random() * 1;
+            barrage.color = "#FFFFFF";
+            barrage.fontSize = 20;
+            barrage.mode = 1;
+            
+            // 添加到渲染器
+            barrageRenderer.addBarrage(barrage);
+        }
+
+        // 禁用按钮防止重复发送
+        button.disabled = true;
+        button.textContent = '发送中...';
+
+        // 获取当前视频时间
+        const videoTime = 0;
+
+        const danmakuMessage = {
+            type: "SEND_DANMAKU",
+            danmaku: {
+                content: content,
+                videoTime: videoTime,
+                color: "#FFFFFF",
+                studentId: studentId,
+                studentName: displayName
+            }
+        };
+
+        console.log("发送弹幕消息:", danmakuMessage);
+        console.log("发送弹幕: " + content);
+
+        sendMessage(danmakuMessage);
+
+        // 3秒后恢复按钮
+        setTimeout(() => {
+            button.disabled = false;
+            button.textContent = '发送弹幕';
+        }, 3000);
+    }
+
+    // 发送评论
+        function sendComment() {
+            const input = document.getElementById('commentInput');
+            const content = input.value.trim();
+            const button = document.getElementById('sendComment');
+
+            if (!content) {
+                showError("请输入评论内容");
+                return;
+            }
+
+            if (!isConnected) {
+                showError("未连接到课堂，无法发送评论");
+                return;
+            }
+
+            // 检查消息是否被禁用
+            if (isAllMessagesDisabled || isCommentsDisabled) {
+                showError("消息已被禁用，无法发送评论");
+                return;
+            }
+
+            // 禁用按钮防止重复发送
+            button.disabled = true;
+            button.textContent = '发送中...';
+
+            // 发送评论消息到服务器
+            sendMessage({
+                type: "SEND_COMMENT",
+                data: {
+                    comment: {
+                        content: content,
+                        studentId: studentId,  // 确保包含studentId
+                        studentName: displayName,
+                        isTeacher: false,
+                        sendTime: new Date().toISOString()
+                    }
+                }
+            });
+
+            // 显示本地评论 - 新的评论添加在底部
+            addLocalComment({
+                content: content,
+                sender: displayName,
+                type: 'student',
+                studentId: studentId,  // 添加studentId用于标识
+                timestamp: new Date()
+            }, true); // true 表示是自己发送的评论，需要自动滚动到底部
+
+            // 清空输入框
+            input.value = '';
+
+            console.log("评论已发送，等待确认");
+
+            // 3秒后恢复按钮
+            setTimeout(() => {
+                button.disabled = false;
+                button.textContent = '发送评论';
+            }, 3000);
+        }
+
+        function sendOpinion() {
+            const titleInput = document.getElementById('opinionTitleInput');
+            const contentInput = document.getElementById('opinionContentInput');
+            const anonymousCheckbox = document.getElementById('opinionAnonymous');
+            const button = document.getElementById('sendOpinion');
+
+            const title = titleInput.value.trim();
+            const content = contentInput.value.trim();
+            const anonymous = anonymousCheckbox.checked;
+
+            if (!content) {
+                showError("请输入观点内容");
+                return;
+            }
+
+            if (!isConnected) {
+                showError("未连接到课堂，无法发送观点");
+                return;
+            }
+
+            if (isAllMessagesDisabled) {
+                showError("消息已被禁用，无法发送观点");
+                return;
+            }
+
+            button.disabled = true;
+            button.textContent = '发送中...';
+
+            sendMessage({
+                type: "SEND_OPINION",
+                data: {
+                    title: title,
+                    content: content,
+                    studentName: anonymous ? '匿名学生' : displayName,
+                    anonymous: anonymous
+                }
+            });
+
+            console.log("观点已发送，等待确认");
+
+            setTimeout(() => {
+                button.disabled = false;
+                button.textContent = '发送观点';
+            }, 3000);
+        }
+
+        function addLocalOpinion(opinion) {
+            opinionList.push(opinion);
+            renderOpinionList();
+            const opinionListEl = document.getElementById('opinionList');
+            opinionListEl.scrollTop = opinionListEl.scrollHeight;
+        }
+
+        function handleOpinionReceived(message) {
+            const data = message.data || message;
+            if (!data) return;
+
+            const opinion = {
+                id: data.id,
+                title: data.title || '',
+                content: data.content || '',
+                studentName: data.anonymous ? '匿名学生' : (data.displayName || data.studentName || '学生'),
+                sendTime: data.sendTime
+            };
+
+            opinionList.push(opinion);
+            renderOpinionList();
+
+            const opinionListEl = document.getElementById('opinionList');
+            opinionListEl.scrollTop = opinionListEl.scrollHeight;
+        }
+
+        function renderOpinionList() {
+            const container = document.getElementById('opinionList');
+            let html = '';
+
+            opinionList.forEach(function(opinion) {
+                const timeStr = opinion.sendTime ? new Date(opinion.sendTime).toLocaleTimeString() : '';
+                const title = opinion.title ? '<div style="color: #ff9800; font-weight: bold; margin-bottom: 4px;">' + escapeHtml(opinion.title) + '</div>' : '';
+                html += '<div class="opinion-item" style="margin-bottom: 12px; padding: 12px; border-radius: 2px; border-left: 4px solid #ff9800; background: rgba(0, 0, 0, 0.5);">' +
+                    '<div class="opinion-author" style="display: flex; align-items: center; margin-bottom: 6px;">' +
+                    '<i class="fas fa-user-graduate" style="color: #ff9800; margin-right: 6px;"></i>' +
+                    '<span style="font-weight: bold; color: #ff9800; font-family: \'Courier New\', monospace; font-size: 13px;">' + escapeHtml(opinion.studentName) + '</span>' +
+                    '<span style="margin-left: auto; font-size: 11px; color: #00ffff; font-family: \'Courier New\', monospace;">' + timeStr + '</span>' +
+                    '</div>' +
+                    title +
+                    '<div style="color: #00ff00; line-height: 1.5; font-family: \'Courier New\', monospace; font-size: 13px;">' + escapeHtml(opinion.content) + '</div>' +
+                    '</div>';
+            });
+
+            container.innerHTML = html || '<div style="color: #00ffff; text-align: center; padding: 20px;">暂无观点</div>';
+            document.getElementById('opinionCount').textContent = opinionList.length + ' 条观点';
+        }
+
+        function escapeHtml(text) {
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+    // 显示教师弹幕
+    function showTeacherDanmaku(data) {
+        if (!barrageRenderer) {
+            console.warn('Canvas未初始化，无法显示弹幕');
+            return;
+        }
+
+        const content = data.content || data.text || '';
+        const color = data.color || '#FF0000';
+        const canvasRef = document.getElementById('canvasRef');
+        
+        if (!canvasRef) {
+            console.warn('Canvas元素不存在，无法显示弹幕');
+            return;
+        }
+        
+        // 创建弹幕对象
+        const barrage = getBarrageObject();
+        barrage.text = content;
+        barrage.x = canvasRef.width;
+        barrage.y = 50 + Math.random() * (canvasRef.height - 100);
+        barrage.speed = 1.5 + Math.random() * 1;
+        barrage.color = color;
+        barrage.fontSize = 24;
+        barrage.mode = 1;
+        
+        // 添加到渲染器
+        barrageRenderer.addBarrage(barrage);
+    }
+
+    // 显示学生弹幕
+    function showStudentDanmaku(data) {
+        if (!barrageRenderer) {
+            console.warn('Canvas未初始化，无法显示弹幕');
+            return;
+        }
+
+        const content = data.content || data.text || '';
+        const color = data.color || '#FFFFFF';
+        const studentName = data.studentName || data.sender || '匿名';
+        const studentIdFromServer = data.studentId;
+        const canvasRef = document.getElementById('canvasRef');
+        
+        if (!canvasRef) {
+            console.warn('Canvas元素不存在，无法显示弹幕');
+            return;
+        }
+
+        // 如果是自己发送的弹幕，直接跳过（因为已经在发送时本地显示过了）
+        if (studentIdFromServer === studentId) {
+            console.log("跳过显示自己发送的弹幕");
+            return;
+        }
+
+        // 创建弹幕对象
+        const barrage = getBarrageObject();
+        barrage.text = content;
+        barrage.x = canvasRef.width;
+        barrage.y = 50 + Math.random() * (canvasRef.height - 100);
+        barrage.speed = 1.5 + Math.random() * 1;
+        barrage.color = color;
+        barrage.fontSize = 20;
+        barrage.mode = 1;
+        
+        // 添加到渲染器
+        barrageRenderer.addBarrage(barrage);
+    }
+
+    // 处理收到的评论消息 - 关键修改点
+    function handleCommentReceived(data) {
+        console.log("收到评论:", data);
+
+        const commentData = data.data || data.comment || data;
+        const studentIdFromServer = commentData.studentId;
+
+        // 关键修改：检查是否是自己的评论，如果是则跳过
+        if (studentIdFromServer === studentId) {
+            console.log("跳过显示自己发送的评论");
+            return;
+        }
+
+        addLocalComment({
+            content: commentData.content,
+            sender: commentData.studentName || commentData.sender || '匿名',
+            type: commentData.isTeacher ? 'teacher' : 'student',
+            isTeacher: commentData.isTeacher,
+            studentId: studentIdFromServer,
+            timestamp: new Date(commentData.sendTime || Date.now())
+        });
+
+        console.log(`收到评论: ${commentData.content.substring(0, 20)}...`);
+    }
+
+    // 添加本地评论 - 修改为新评论在底部
+    function addLocalComment(commentData, scrollToBottom = false) {
+        // 转换评论数据格式以适配虚拟评论列表
+        const comment = {
+            id: Date.now(),
+            author: commentData.isTeacher ? '教师' : (commentData.sender || '学生' + commentData.studentId),
+            type: commentData.isTeacher ? 'teacher' : 'student',
+            content: commentData.content,
+            time: new Date(commentData.timestamp || Date.now()).toLocaleTimeString()
+        };
+
+        // 更新评论计数
+        commentList.push(commentData); // 使用push而不是unshift
+        updateCommentCount();
+
+        // 使用虚拟评论列表
+        if (commentListManager) {
+            commentListManager.addComment(comment);
+            console.log(`添加本地评论: ${commentData.content.substring(0, 20)}...`);
+            return;
+        }
+
+        // 降级方案：直接操作DOM
+        const commentListElement = document.getElementById('commentList');
+        const commentItem = createCommentElement(commentData);
+
+        // 新的评论添加到列表底部（appendChild）
+        commentListElement.appendChild(commentItem);
+
+        // 如果需要，滚动到底部（自己发送的评论自动滚动）
+        if (scrollToBottom) {
+            commentListElement.scrollTop = commentListElement.scrollHeight;
+        }
+
+        // 限制评论数量 - 如果超过最大数量，移除最上面的评论（旧的）
+        if (commentList.length > maxComments) {
+            // 移除列表顶部的第一个非系统评论
+            const children = commentListElement.children;
+            if (children.length > 1) { // 保留第一个系统消息
+                // 从第二个元素开始找（第一个是系统消息）
+                for (let i = 1; i < children.length; i++) {
+                    const child = children[i];
+                    if (child !== commentItem) { // 不是当前刚添加的评论
+                        commentListElement.removeChild(child);
+
+                        // 从数组中移除对应的评论
+                        // 通过内容和时间戳来匹配
+                        const commentToRemove = commentList.find((c, index) => {
+                            if (index >= 0) {
+                                const cTime = c.timestamp instanceof Date ? c.timestamp.getTime() : new Date(c.timestamp).getTime();
+                                const commentTime = commentData.timestamp instanceof Date ? commentData.timestamp.getTime() : new Date(commentData.timestamp).getTime();
+                                return c.content === commentData.content &&
+                                    c.sender === commentData.sender &&
+                                    Math.abs(cTime - commentTime) > 1000; // 不是同一时间发送的
+                            }
+                            return false;
+                        });
+
+                        if (commentToRemove) {
+                            const index = commentList.indexOf(commentToRemove);
+                            if (index > -1) {
+                                commentList.splice(index, 1);
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // 确保数组长度不超过限制
+            if (commentList.length > maxComments) {
+                commentList.shift(); // 移除数组中的第一个元素
+            }
+        }
+    }
+
+    // 创建评论元素
+    function createCommentElement(commentData) {
+        const commentItem = document.createElement('div');
+
+        let type = 'student';
+        let icon = 'fas fa-user-graduate';
+        let badgeText = '学生';
+
+        if (commentData.isTeacher || commentData.type === 'teacher') {
+            type = 'teacher';
+            icon = 'fas fa-chalkboard-teacher';
+            badgeText = '教师';
+        } else if (commentData.type === 'system') {
+            type = 'system';
+            icon = 'fas fa-info-circle';
+            badgeText = '系统';
+        }
+
+        commentItem.className = `comment-item ${type}`;
+
+        const timeString = commentData.timestamp instanceof Date
+            ? commentData.timestamp.toLocaleTimeString()
+            : new Date(commentData.timestamp || Date.now()).toLocaleTimeString();
+
+        commentItem.innerHTML = `
+            <div class="comment-author">
+                <i class="${icon}"></i>
+                <span class="name">${commentData.sender || commentData.studentName || '匿名'}</span>
+                <span class="badge">${badgeText}</span>
+            </div>
+            <div class="comment-content">${commentData.content || ''}</div>
+            <div class="comment-meta">
+                <span>${timeString}</span>
+            </div>
+        `;
+
+        return commentItem;
+    }
+
+    // 更新评论计数
+    function updateCommentCount() {
+        const count = commentList.length;
+        document.getElementById('commentCount').textContent = `${count} 条评论`;
+    }
+
+
+
+    // 更新连接状态
+    function updateConnectionStatus(connected, message) {
+        const statusIndicator = document.getElementById('connectionStatus');
+        const statusText = document.getElementById('statusText');
+
+        if (connected) {
+            statusIndicator.className = 'status-indicator';
+            statusText.textContent = '已连接';
+            statusText.style.color = '#4CAF50';
+        } else {
+            statusIndicator.className = 'status-indicator disconnected';
+            statusText.textContent = '未连接';
+            statusText.style.color = '#f44336';
+        }
+    }
+
+    // 显示消息
+    function showSuccess(message) {
+        console.log(message);
+    }
+
+    function showError(message) {
+        console.error(message);
+        alert(`❌ ${message}`);
+    }
+
+    function showWarning(message) {
+        console.warn(message);
+        alert(`⚠️ ${message}`);
+    }
+
+    // 视频控制
+    function handleVideoStatus(data) {
+        console.log("视频状态:", data);
+    }
+
+    function handleVideoJump(data) {
+        console.log("视频跳转:", data);
+    }
+
+    // 设置键盘快捷键
+    function setupKeyboardShortcuts() {
+        // 弹幕输入框回车发送
+        document.getElementById('danmakuInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendDanmaku();
+            }
+        });
+
+        // 评论输入框Ctrl+Enter发送
+        document.getElementById('commentInput').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                sendComment();
+            }
+        });
+
+        // 观点输入框Ctrl+Enter发送
+        document.getElementById('opinionContentInput').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                sendOpinion();
+            }
+        });
+    }
+
+    // 切换广播身份模式
+    function toggleBroadcastMode() {
+        isAnonymousMode = !isAnonymousMode;
+        const studentNameElement = document.getElementById('studentName');
+        const toggleButton = document.getElementById('toggleBroadcastMode');
+        const icon = toggleButton.querySelector('i');
+        
+        if (isAnonymousMode) {
+            displayName = '匿名同学';
+            studentNameElement.textContent = '匿名同学';
+            icon.className = 'fas fa-user';
+            toggleButton.innerHTML = '<i class="fas fa-user"></i> 切换为本人身份';
+            toggleButton.title = '切换为本人身份广播';
+            console.log("已切换为匿名模式");
+        } else {
+            displayName = studentName;
+            studentNameElement.textContent = studentName;
+            icon.className = 'fas fa-user-secret';
+            toggleButton.innerHTML = '<i class="fas fa-user-secret"></i> 切换为匿名身份';
+            toggleButton.title = '切换为匿名身份广播';
+            console.log("已切换为本人模式");
+        }
+    }
+
+
+
+    // 全局函数
+    window.sendDanmaku = sendDanmaku;
+    window.sendComment = sendComment;
+    window.switchTab = switchTab;
+    window.toggleBroadcastMode = toggleBroadcastMode;
+    window.playVideo = function() { addLog("播放视频", "info"); };
+    window.pauseVideo = function() { addLog("暂停视频", "info"); };
+</script>
+
+<!-- Font Awesome 图标 -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</body>
+</html>

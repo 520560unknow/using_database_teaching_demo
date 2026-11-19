@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课堂智答 · 自主学习与课前预习</title>
+    <style>
+        :root {
+            --bg: #05070d;
+            --panel: rgba(14, 20, 34, 0.88);
+            --panel-2: rgba(20, 28, 46, 0.9);
+            --line: rgba(0, 229, 255, 0.22);
+            --cyan: #00e5ff;
+            --pink: #ff2d95;
+            --green: #39ff88;
+            --text: #e8f4ff;
+            --muted: #8fa6c4;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at 12% 8%, rgba(255, 45, 149, 0.16), transparent 32%),
+                radial-gradient(circle at 88% 14%, rgba(0, 229, 255, 0.14), transparent 34%),
+                linear-gradient(160deg, #05070d 0%, #08101f 55%, #05070d 100%);
+        }
+        .grid-bg {
+            position: fixed; inset: 0; pointer-events: none; opacity: 0.18;
+            background-image: linear-gradient(rgba(0,229,255,.12) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(0,229,255,.12) 1px, transparent 1px);
+            background-size: 42px 42px;
+            mask-image: linear-gradient(to bottom, black, transparent 80%);
+        }
+        .wrap { position: relative; max-width: 1240px; margin: 0 auto; padding: 26px 22px 36px; }
+        header { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
+        .brand { display: flex; align-items: center; gap: 14px; }
+        .logo {
+            width: 46px; height: 46px; border-radius: 14px;
+            background: linear-gradient(135deg, var(--pink), var(--cyan));
+            box-shadow: 0 0 22px rgba(0,229,255,.35);
+            display: grid; place-items: center; font-weight: 800; color: #041018; font-size: 20px;
+        }
+        h1 { margin: 0; font-size: 24px; letter-spacing: 1px; }
+        .sub { margin-top: 4px; color: var(--muted); font-size: 13px; }
+        .badges { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+        .badge { padding: 7px 11px; border: 1px solid var(--line); border-radius: 999px; font-size: 12px; color: var(--cyan); background: rgba(0,229,255,.06); }
+        .badge.pink { color: var(--pink); border-color: rgba(255,45,149,.3); background: rgba(255,45,149,.06); }
+        .layout { display: grid; grid-template-columns: minmax(0, 2.15fr) minmax(280px, .85fr); gap: 18px; }
+        .panel {
+            background: var(--panel); border: 1px solid var(--line); border-radius: 18px;
+            box-shadow: 0 18px 55px rgba(0,0,0,.38), inset 0 0 0 1px rgba(255,255,255,.02);
+            backdrop-filter: blur(8px);
+        }
+        .chat { display: flex; flex-direction: column; min-height: 620px; overflow: hidden; }
+        .chat-head { display: flex; justify-content: space-between; align-items: center; padding: 15px 18px; border-bottom: 1px solid rgba(0,229,255,.12); }
+        .chat-head strong { font-size: 14px; letter-spacing: .5px; }
+        .room { color: var(--muted); font-size: 12px; }
+        .messages { flex: 1; padding: 18px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+        .msg { display: flex; gap: 10px; max-width: 92%; }
+        .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+        .avatar { width: 32px; height: 32px; border-radius: 10px; flex: 0 0 32px; display: grid; place-items: center; font-size: 12px; font-weight: 700; }
+        .user .avatar { background: linear-gradient(135deg, var(--pink), #8a2be2); color: #fff; }
+        .ai .avatar { background: linear-gradient(135deg, var(--cyan), #0077ff); color: #041018; }
+        .bubble { padding: 12px 14px; border-radius: 14px; line-height: 1.7; font-size: 14px; border: 1px solid rgba(255,255,255,.06); background: var(--panel-2); }
+        .user .bubble { background: rgba(255,45,149,.13); border-color: rgba(255,45,149,.24); }
+        .meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 9px; color: var(--muted); font-size: 11px; }
+        .tag { padding: 3px 7px; border-radius: 6px; background: rgba(0,229,255,.1); color: var(--cyan); }
+        .tag.warn { background: rgba(255,190,0,.12); color: #ffc94d; }
+        .sources { margin-top: 10px; display: grid; gap: 7px; }
+        .source { padding: 9px 10px; border-radius: 10px; background: rgba(0,229,255,.045); border: 1px solid rgba(0,229,255,.14); }
+        .source b { color: var(--cyan); font-size: 12px; }
+        .source p { margin: 4px 0 0; color: #b7c9df; font-size: 12px; line-height: 1.55; }
+        .actions { margin-top: 10px; display: flex; gap: 8px; }
+        button { cursor: pointer; font-family: inherit; }
+        .btn { border: 1px solid var(--line); background: rgba(0,229,255,.08); color: var(--cyan); border-radius: 10px; padding: 8px 12px; font-size: 12px; transition: .2s; }
+        .btn:hover { background: rgba(0,229,255,.16); box-shadow: 0 0 16px rgba(0,229,255,.2); }
+        .btn.pink { color: var(--pink); border-color: rgba(255,45,149,.32); background: rgba(255,45,149,.08); }
+        .btn.pink:hover { background: rgba(255,45,149,.16); }
+        .btn.primary { background: linear-gradient(135deg, var(--cyan), #3f8cff); color: #031018; border: none; font-weight: 700; }
+        .composer { padding: 14px; border-top: 1px solid rgba(0,229,255,.12); display: flex; gap: 10px; }
+        .composer input {
+            flex: 1; min-width: 0; padding: 13px 14px; border-radius: 12px; outline: none;
+            background: rgba(4, 10, 20, .9); border: 1px solid rgba(0,229,255,.22); color: var(--text); font-size: 14px;
+        }
+        .composer input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0,229,255,.08); }
+        .composer button { padding: 0 18px; border-radius: 12px; }
+        .side { padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+        .side h3 { margin: 0; font-size: 14px; color: var(--cyan); letter-spacing: .5px; }
+        .side p { margin: 6px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.7; }
+        .chips { display: flex; flex-direction: column; gap: 8px; }
+        .chip { text-align: left; padding: 10px 11px; border-radius: 10px; border: 1px solid rgba(255,255,255,.07); background: rgba(255,255,255,.025); color: #cfe3f7; font-size: 12.5px; }
+        .chip:hover { border-color: rgba(0,229,255,.35); color: #fff; }
+        .steps { margin: 0; padding-left: 18px; color: #b7c9df; font-size: 12.5px; line-height: 1.8; }
+        .note { margin-top: auto; padding: 11px; border-radius: 10px; background: rgba(255,190,0,.06); border: 1px solid rgba(255,190,0,.18); color: #e8c977; font-size: 11.5px; line-height: 1.6; }
+        .loading { display: none; align-self: flex-start; color: var(--cyan); font-size: 12px; padding: 6px 2px; }
+        .loading.show { display: block; }
+        .toast { position: fixed; right: 22px; bottom: 22px; padding: 12px 16px; border-radius: 12px; background: rgba(8,16,28,.96); border: 1px solid var(--line); color: var(--text); font-size: 13px; opacity: 0; transform: translateY(10px); transition: .25s; pointer-events: none; }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } .chat { min-height: 560px; } header { align-items: flex-start; flex-direction: column; } .badges { justify-content: flex-start; } }
+    </style>
+<script src="/js/app-config.js"></script>
+<script src="/js/ui-common.js"></script>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="wrap">
+    <header>
+        <div class="brand">
+            <div class="logo">智</div>
+            <div>
+                <h1>课堂智答</h1>
+                <div class="sub">教师资料库驱动的自主学习 · 课前预习与信息查找</div>
+            </div>
+        </div>
+        <div class="badges">
+            <span class="badge">本地模型 · 离线可用</span>
+            <span class="badge pink" id="roomBadge">课堂：--</span>
+        </div>
+    </header>
+
+    <div class="layout">
+        <section class="panel chat">
+            <div class="chat-head">
+                <strong>资料检索与问答</strong>
+                <span class="room" id="roomText">未绑定课堂</span>
+            </div>
+            <div class="messages" id="messages">
+                <div class="msg ai">
+                    <div class="avatar">AI</div>
+                    <div class="bubble">
+                        你好，我是课堂智答。先用自己的关键词查一遍，我会在老师上传的讲义里找依据并标出来源；资料没有覆盖时，可以一键转给老师。
+                        <div class="meta"><span class="tag">本地 AI</span><span>回答仅依据资料</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="loading" id="loading">正在检索教师资料…</div>
+            <form class="composer" id="form">
+                <input id="question" autocomplete="off" placeholder="例如：视频树的分支是怎么选的？" />
+                <button class="btn primary" type="submit">发送</button>
+            </form>
+        </section>
+
+        <aside class="panel side">
+            <div>
+                <h3>试试这样问</h3>
+                <div class="chips">
+                    <button class="chip" data-q="课堂弹幕怎么发？">课堂弹幕怎么发？</button>
+                    <button class="chip" data-q="视频树分支怎么选？">视频树分支怎么选？</button>
+                    <button class="chip" data-q="课件和资料在哪里下载？">课件和资料在哪里下载？</button>
+                    <button class="chip" data-q="弹幕被老师禁言了怎么办？">弹幕被老师禁言了怎么办？</button>
+                    <button class="chip" data-q="怎样判断一条资料是否可信？">怎样判断一条资料是否可信？</button>
+                </div>
+            </div>
+            <div>
+                <h3>老师上传的资料</h3>
+                <div class="chips" id="materialList"></div>
+            </div>
+            <div>
+                <h3>预习三步</h3>
+                <ol class="steps">
+                    <li>先用关键词自己查一遍，记录来源。</li>
+                    <li>再看 AI 的资料卡，核对出处是否一致。</li>
+                    <li>仍不确定的问题，转人工教师并写清卡点。</li>
+                </ol>
+            </div>
+            <div class="note">
+                本页回答由本地模型基于教师维护的资料生成，并显示出处。重要结论请点开资料原文核对；不要输入个人敏感信息。
+            </div>
+        </aside>
+    </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+    const classroomId = AppConfig.classroomId();
+    const studentId = AppConfig.studentId() || ('stu_' + Date.now());
+    const messages = document.getElementById('messages');
+    const loading = document.getElementById('loading');
+    const input = document.getElementById('question');
+
+    document.getElementById('roomBadge').textContent = '课堂：' + (classroomId || '未指定');
+    document.getElementById('roomText').textContent = '课堂 ' + (classroomId || '未指定') + ' · 匿名提问';
+
+    const esc = UiCommon.esc;
+
+    function toast(text) {
+        const el = document.getElementById('toast');
+        el.textContent = text;
+        el.classList.add('show');
+        setTimeout(function () { el.classList.remove('show'); }, 2200);
+    }
+
+    function addUser(text) {
+        const div = document.createElement('div');
+        div.className = 'msg user';
+        div.innerHTML = '<div class="avatar">我</div><div class="bubble">' + esc(text) + '</div>';
+        messages.appendChild(div);
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    function addAi(data, question) {
+        const div = document.createElement('div');
+        div.className = 'msg ai';
+        const modeText = data.mode === 'llm' ? '本地 AI' : '资料检索';
+        const latency = data.latencyMs == null ? '' : (data.latencyMs + ' ms');
+        let sourcesHtml = '';
+        if (data.sources && data.sources.length) {
+            sourcesHtml = '<div class="sources">';
+            data.sources.forEach(function (s) {
+                sourcesHtml += '<div class="source"><b>[' + esc(s.id) + '] ' + esc(s.title) + '</b>' +
+                    '<p>' + esc(s.excerpt) + '</p></div>';
+            });
+            sourcesHtml += '</div>';
+        }
+        const transferBtn = data.lowConfidence
+            ? '<div class="actions"><button class="btn pink" data-transfer="1">转人工教师</button></div>'
+            : '';
+        div.innerHTML = '<div class="avatar">AI</div><div class="bubble">' +
+            '<div>' + esc(data.answer).replace(/\n/g, '<br>') + '</div>' +
+            sourcesHtml +
+            '<div class="meta"><span class="tag">' + modeText + '</span>' +
+            (latency ? '<span>' + latency + '</span>' : '') +
+            (data.lowConfidence ? '<span class="tag warn">建议转人工</span>' : '') +
+            '</div>' + transferBtn + '</div>';
+        messages.appendChild(div);
+        messages.scrollTop = messages.scrollHeight;
+        const btn = div.querySelector('[data-transfer]');
+        if (btn) {
+            btn.addEventListener('click', function () { transfer(question, btn); });
+        }
+    }
+
+    async function ask(text) {
+        const question = (text || '').trim();
+        if (!question) return;
+        addUser(question);
+        input.value = '';
+        loading.classList.add('show');
+        try {
+            const res = await fetch('/api/ai/ask', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({question: question, classroomId: classroomId, studentId: studentId})
+            });
+            const data = await res.json();
+            loading.classList.remove('show');
+            if (data.error) { toast(data.error); return; }
+            addAi(data, question);
+        } catch (e) {
+            loading.classList.remove('show');
+            toast('请求失败，请确认本地服务已启动');
+        }
+    }
+
+    async function transfer(question, btn) {
+        btn.disabled = true;
+        btn.textContent = '已转交';
+        try {
+            const res = await fetch('/api/ai/transfer', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({question: question, classroomId: classroomId, studentId: studentId})
+            });
+            const data = await res.json();
+            if (data.ok) toast('已转交教师，老师会在答疑工作台看到');
+            else toast(data.error || '转交失败');
+        } catch (e) {
+            toast('转交失败，请稍后再试');
+        }
+    }
+
+    async function loadMaterials() {
+        const box = document.getElementById('materialList');
+        try {
+            const res = await fetch('/api/ai/materials' + (classroomId ? ('?classroomId=' + encodeURIComponent(classroomId)) : ''));
+            const data = await res.json();
+            const items = (data.items || []).slice(0, 6);
+            if (!items.length) {
+                box.innerHTML = '<span class="room">老师暂未上传资料</span>';
+                return;
+            }
+            box.innerHTML = '';
+            items.forEach(function (item) {
+                const btn = document.createElement('button');
+                btn.className = 'chip';
+                btn.textContent = '《' + item.title + '》 · ' + item.chunks + ' 段';
+                btn.addEventListener('click', function () {
+                    ask('请概括《' + item.title + '》的重点内容');
+                });
+                box.appendChild(btn);
+            });
+        } catch (e) {
+            box.innerHTML = '<span class="room">资料加载失败</span>';
+        }
+    }
+
+    document.getElementById('form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        ask(input.value);
+    });
+    document.querySelectorAll('.chip').forEach(function (chip) {
+        chip.addEventListener('click', function () { ask(chip.getAttribute('data-q')); });
+    });
+    loadMaterials();
+</script>
+</body>
+</html>

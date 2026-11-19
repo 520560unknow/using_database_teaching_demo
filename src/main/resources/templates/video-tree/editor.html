@@ -1,0 +1,1704 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频树编辑器 - 基于JointJS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jointjs/3.5.0/joint.min.css">
+    <link rel="stylesheet" href="/css/cyberpunk-2077.css">
+</head>
+<body class="cyber-body">
+<input type="hidden" id="teacherId" th:value="${teacherId}">
+<div class="cyber-container">
+    <div class="cyber-panel cyber-panel-left">
+        <div class="cyber-card cyber-glow-pink">
+            <div class="cyber-card-header cyber-gradient-pink">
+                <h3 class="cyber-title cyber-title-sm">
+                    <i class="fas fa-plus cyber-text-pink"></i> 创建节点
+                </h3>
+            </div>
+            <div class="cyber-card-content">
+                <div class="cyber-form-group">
+                    <label for="nodeName" class="cyber-form-label">节点名称</label>
+                    <input type="text" id="nodeName" class="cyber-input cyber-input-pink" placeholder="输入节点名称">
+                </div>
+                <div class="cyber-form-group">
+                    <label for="nodeDesc" class="cyber-form-label">节点描述</label>
+                    <textarea id="nodeDesc" class="cyber-input cyber-input-pink cyber-textarea" placeholder="输入节点描述"></textarea>
+                </div>
+                <div class="cyber-form-group">
+                    <label for="nodeVideo" class="cyber-form-label">视频文件</label>
+                    <div class="cyber-input-group">
+                        <input type="text" id="nodeVideo" class="cyber-input cyber-input-pink" placeholder="视频文件路径" readonly>
+                        <button type="button" class="cyber-btn cyber-btn-outline cyber-btn-pink" onclick="selectVideoFile()">
+                            <i class="fas fa-folder-open"></i> 选择文件
+                        </button>
+                    </div>
+                    <div class="cyber-form-help">
+                        支持MP4、AVI、MOV等格式
+                    </div>
+                </div>
+                <button class="cyber-btn cyber-btn-primary cyber-btn-pink cyber-btn-full" onclick="createNode()">
+                    <i class="fas fa-plus-circle"></i> 创建新节点
+                </button>
+            </div>
+        </div>
+
+        <div class="cyber-card cyber-glow-cyan">
+            <div class="cyber-card-header cyber-gradient-cyan">
+                <h3 class="cyber-title cyber-title-sm">
+                    <i class="fas fa-sitemap cyber-text-cyan"></i> 树信息
+                </h3>
+            </div>
+            <div class="cyber-card-content">
+                <div class="cyber-grid cyber-grid-2">
+                    <div class="cyber-stat-item">
+                        <div class="cyber-stat-value" id="nodeCount">0</div>
+                        <div class="cyber-stat-label">节点数</div>
+                    </div>
+                    <div class="cyber-stat-item">
+                        <div class="cyber-stat-value" id="connectionCount">0</div>
+                        <div class="cyber-stat-label">连接数</div>
+                    </div>
+                </div>
+
+                <div class="cyber-btn-group cyber-btn-group-wrap">
+                    <button class="cyber-btn cyber-btn-outline cyber-btn-cyan" onclick="saveTree()">
+                        <i class="fas fa-save"></i> 保存
+                    </button>
+                    <button class="cyber-btn cyber-btn-primary cyber-btn-green" onclick="saveToServer()">
+                        <i class="fas fa-cloud-upload-alt"></i> 保存到服务器
+                    </button>
+                    <button class="cyber-btn cyber-btn-outline cyber-btn-cyan" onclick="loadTree()">
+                        <i class="fas fa-folder-open"></i> 加载
+                    </button>
+                    <button class="cyber-btn cyber-btn-outline cyber-btn-cyan" onclick="autoLayout()">
+                        <i class="fas fa-project-diagram"></i> 布局
+                    </button>
+                </div>
+
+                <div class="cyber-btn-group cyber-btn-group-wrap">
+                    <button class="cyber-btn cyber-btn-outline cyber-btn-cyan" onclick="exportTree()">
+                        <i class="fas fa-file-export"></i> 导出JSON
+                    </button>
+                    <button class="cyber-btn cyber-btn-outline cyber-btn-cyan" onclick="importTree()">
+                        <i class="fas fa-file-import"></i> 导入JSON
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cyber-canvas-container">
+        <div id="joint-canvas"></div>
+
+        <div class="cyber-toolbar cyber-glow-green">
+            <button class="cyber-tool-btn" onclick="setTool('select')" id="tool-select" title="选择工具 (S)">
+                <i class="fas fa-mouse-pointer"></i>
+            </button>
+            <button class="cyber-tool-btn" onclick="setTool('connect')" id="tool-connect" title="连接工具 (C)">
+                <i class="fas fa-link"></i>
+            </button>
+            <button class="cyber-tool-btn" onclick="deleteSelected()" title="删除 (Delete)">
+                <i class="fas fa-trash"></i>
+            </button>
+            <button class="cyber-tool-btn" onclick="zoomIn()" title="放大 (Ctrl+)">
+                <i class="fas fa-search-plus"></i>
+            </button>
+            <button class="cyber-tool-btn" onclick="zoomOut()" title="缩小 (Ctrl-)">
+                <i class="fas fa-search-minus"></i>
+            </button>
+            <button class="cyber-tool-btn" onclick="fitToScreen()" title="适应屏幕 (Ctrl+0)">
+                <i class="fas fa-expand"></i>
+            </button>
+            <button class="cyber-tool-btn" onclick="centerContent()" title="居中显示">
+                <i class="fas fa-crosshairs"></i>
+            </button>
+            <button class="cyber-tool-btn" onclick="resetZoom()" title="重置缩放">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+            <button class="cyber-tool-btn" onclick="showGridToggle()" title="切换网格">
+                <i class="fas fa-th"></i>
+            </button>
+            <button class="cyber-tool-btn" onclick="clearAll()" title="清空画布">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </div>
+
+        <div class="cyber-hint cyber-hint-connection" id="connectionHint">
+            连接模式：点击源节点开始连接，再点击目标节点完成连接 (ESC取消)
+        </div>
+    </div>
+
+    <div class="cyber-panel cyber-panel-right">
+        <div class="cyber-card cyber-glow-orange">
+            <div class="cyber-card-header cyber-gradient-orange">
+                <h3 class="cyber-title cyber-title-sm">
+                    <i class="fas fa-edit cyber-text-orange"></i> 编辑节点
+                </h3>
+            </div>
+            <div class="cyber-card-content">
+                <div class="cyber-form-group">
+                    <label class="cyber-form-label">节点ID</label>
+                    <input type="text" id="editNodeId" class="cyber-input cyber-input-orange" readonly>
+                </div>
+                <div class="cyber-form-group">
+                    <label class="cyber-form-label">节点名称</label>
+                    <input type="text" id="editNodeName" class="cyber-input cyber-input-orange">
+                </div>
+                <div class="cyber-form-group">
+                    <label class="cyber-form-label">节点描述</label>
+                    <textarea id="editNodeDesc" class="cyber-input cyber-input-orange cyber-textarea"></textarea>
+                </div>
+                <div class="cyber-form-group">
+                    <label class="cyber-form-label">视频文件</label>
+                    <div class="cyber-input-group">
+                        <input type="text" id="editNodeVideo" class="cyber-input cyber-input-orange" readonly>
+                        <button type="button" class="cyber-btn cyber-btn-outline cyber-btn-orange cyber-btn-small" onclick="selectVideoForEdit()">
+                            <i class="fas fa-folder-open"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="cyber-btn-group cyber-btn-group-wrap">
+                    <button class="cyber-btn cyber-btn-success" onclick="updateNode()">
+                        <i class="fas fa-save"></i> 保存
+                    </button>
+                    <button class="cyber-btn cyber-btn-danger" onclick="deleteNode()">
+                        <i class="fas fa-trash"></i> 删除
+                    </button>
+                    <button class="cyber-btn cyber-btn-outline cyber-btn-orange" onclick="cloneNode()">
+                        <i class="fas fa-clone"></i> 克隆
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="cyber-card cyber-glow-purple">
+            <div class="cyber-card-header cyber-gradient-purple">
+                <h3 class="cyber-title cyber-title-sm">
+                    <i class="fas fa-link cyber-text-purple"></i> 连接管理
+                </h3>
+            </div>
+            <div class="cyber-card-content">
+                <div class="cyber-connection-list" id="connectionList">
+                    <div class="cyber-empty-state">
+                        选择节点以查看连接
+                    </div>
+                </div>
+                <div class="cyber-form-group">
+                    <label class="cyber-form-label">连接标签</label>
+                    <input type="text" id="connectionLabel" class="cyber-input cyber-input-purple" placeholder="连接标签" value="相关视频">
+                </div>
+                <div class="cyber-btn-group">
+                    <button class="cyber-btn cyber-btn-primary cyber-btn-purple" onclick="startConnection()">
+                        <i class="fas fa-link"></i> 开始连接
+                    </button>
+                    <button class="cyber-btn cyber-btn-outline cyber-btn-purple" onclick="editConnection()">
+                        <i class="fas fa-edit"></i> 编辑连接
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="cyber-status-bar" id="statusBar">
+    <div class="cyber-status-left">
+        <div class="cyber-status-item">
+            <i class="fas fa-sitemap cyber-text-cyan"></i>
+            节点: <span class="cyber-status-value" id="statusNodeCount">0</span>
+        </div>
+        <div class="cyber-status-item">
+            <i class="fas fa-link cyber-text-pink"></i>
+            连接: <span class="cyber-status-value" id="statusConnectionCount">0</span>
+        </div>
+        <div class="cyber-status-item">
+            <i class="fas fa-mouse-pointer cyber-text-green"></i>
+            工具: <span class="cyber-status-value" id="statusTool">选择</span>
+        </div>
+        <div class="cyber-status-item">
+            <i class="fas fa-expand-arrows-alt cyber-text-orange"></i>
+            缩放: <span class="cyber-status-value" id="statusZoom">100%</span>
+        </div>
+    </div>
+    <div class="cyber-status-message" id="statusMessage">
+        就绪 - 点击左侧创建新节点
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.4.0/backbone-min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jointjs/3.5.0/joint.min.js"></script>
+
+<script>
+    // 全局变量
+    let graph = null;
+    let paper = null;
+    let selectedCell = null;
+    let currentTool = 'select';
+    let connectionMode = false;
+    let connectionSource = null;
+    let currentNodeId = 1;
+    let currentConnectionId = 1;
+    let showGrid = true;
+    // 已保存到服务器的视频树 ID（空表示还没保存过）
+    let serverTreeId = localStorage.getItem('videoTreeServerId') || null;
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        initJointJS();
+        createSampleTree();
+        updateStats();
+        updateStatus('就绪 - 点击左侧创建新节点');
+
+        setupShortcuts();
+        updateZoomDisplay();
+
+        // 确保所有按钮可见
+        ensureButtonsVisible();
+    });
+
+    // 确保所有按钮可见
+    function ensureButtonsVisible() {
+        const buttons = document.querySelectorAll('.btn, .tool-btn');
+        buttons.forEach(btn => {
+            btn.classList.add('btn-visible');
+            btn.style.opacity = '1';
+            btn.style.visibility = 'visible';
+            btn.style.display = 'flex';
+        });
+    }
+
+    // 初始化JointJS
+    function initJointJS() {
+        graph = new joint.dia.Graph({}, { cellNamespace: joint.shapes });
+
+        paper = new joint.dia.Paper({
+            el: document.getElementById('joint-canvas'),
+            model: graph,
+            width: '100%',
+            height: '100%',
+            gridSize: 10,
+            drawGrid: { name: 'mesh' },
+            background: { color: 'transparent' },
+            interactive: {
+                linkMove: false,
+                labelMove: false
+            },
+            snapLinks: { radius: 20 },
+            linkPinning: false,
+            defaultLink: new joint.shapes.standard.Link(),
+            validateConnection: function(cellViewS, magnetS, cellViewT, magnetT, end, linkView) {
+                if (cellViewS === cellViewT) return false;
+
+                const sourceId = cellViewS.model.id;
+                const targetId = cellViewT.model.id;
+
+                // 检查是否已经有相同的连接
+                const existingLinks = graph.getLinks().filter(link => {
+                    return link.get('source').id === sourceId &&
+                        link.get('target').id === targetId;
+                });
+
+                if (existingLinks.length > 0) {
+                    updateStatus('这两个节点已经连接', 'error');
+                    return false;
+                }
+
+                return true;
+            },
+            validateMagnet: function(cellView, magnet) {
+                return true;
+            }
+        });
+
+        // 监听元素选择
+        paper.on('cell:pointerclick', function(cellView, evt) {
+            const cell = cellView.model;
+
+            if (connectionMode && connectionSource && cell.isElement()) {
+                // 完成连接
+                completeConnection(cell);
+                return;
+            }
+
+            if (currentTool === 'select') {
+                selectCell(cell);
+
+                if (cell.isElement()) {
+                    fillEditForm(cell);
+                    updateConnectionList(cell);
+                }
+            }
+        });
+
+        // 监听空白区域点击
+        paper.on('blank:pointerclick', function(evt) {
+            if (connectionMode) {
+                cancelConnectionMode();
+            } else {
+                clearSelection();
+                clearEditForm();
+            }
+        });
+
+        // 监听元素添加
+        graph.on('add', function(cell) {
+            if (cell.isElement()) {
+                updateStats();
+            }
+        });
+
+        // 监听元素移除
+        graph.on('remove', function(cell) {
+            if (cell.isElement()) {
+                updateStats();
+            }
+        });
+
+        // 监听缩放变化
+        paper.on('scale', function() {
+            updateZoomDisplay();
+        });
+    }
+
+    // 创建示例树
+    function createSampleTree() {
+        // 清空现有数据
+        graph.clear();
+        currentNodeId = 1;
+        currentConnectionId = 1;
+
+        // 创建根节点
+        const rootNode = createNodeElement('物理入门', '物理学基础知识', '');
+        rootNode.position(400, 100);
+        graph.addCell(rootNode);
+
+        // 创建子节点
+        const node2 = createNodeElement('力学基础', '牛顿运动定律', '');
+        node2.position(250, 250);
+        graph.addCell(node2);
+
+        const node3 = createNodeElement('电磁学', '电场与磁场', '');
+        node3.position(550, 250);
+        graph.addCell(node3);
+
+        const node4 = createNodeElement('光学原理', '光的性质', '');
+        node4.position(400, 400);
+        graph.addCell(node4);
+
+        // 创建连接
+        createConnection(rootNode, node2, '力学相关');
+        createConnection(rootNode, node3, '电磁相关');
+        createConnection(node2, node4, '光学应用');
+
+        updateStats();
+        ensureButtonsVisible();
+    }
+
+    // 创建节点元素
+    function createNodeElement(name, description, videoUrl) {
+        const nodeId = `node_${currentNodeId++}`;
+
+        // 创建自定义节点
+        const node = new joint.shapes.standard.Rectangle({
+            id: nodeId,
+            position: { x: 100, y: 100 },
+            size: { width: 180, height: 100 },
+            attrs: {
+                body: {
+                    fill: '#ffffff',
+                    stroke: '#667eea',
+                    strokeWidth: 2,
+                    rx: 8,
+                    ry: 8,
+                    cursor: 'move'
+                },
+                label: {
+                    text: name,
+                    fill: '#2d3748',
+                    fontSize: 14,
+                    fontWeight: 'bold',
+                    fontFamily: 'Segoe UI, Microsoft YaHei, sans-serif',
+                    refY: 20,
+                    yAlignment: 'middle'
+                },
+                description: {
+                    text: description || '暂无描述',
+                    fill: '#666',
+                    fontSize: 12,
+                    fontFamily: 'Segoe UI, Microsoft YaHei, sans-serif',
+                    refY: 45,
+                    yAlignment: 'middle'
+                },
+                // 添加上方端口
+                topPort: {
+                    ref: 'body',
+                    refX: 0.5,
+                    refY: 0,
+                    port: 'top',
+                    r: 8,
+                    fill: '#48bb78',
+                    stroke: '#ffffff',
+                    strokeWidth: 2,
+                    magnet: true,
+                    cursor: 'pointer'
+                },
+                // 添加下方端口
+                bottomPort: {
+                    ref: 'body',
+                    refX: 0.5,
+                    refY: 1,
+                    port: 'bottom',
+                    r: 8,
+                    fill: '#667eea',
+                    stroke: '#ffffff',
+                    strokeWidth: 2,
+                    magnet: true,
+                    cursor: 'pointer'
+                }
+            },
+            ports: {
+                groups: {
+                    'top': {
+                        position: 'top',
+                        attrs: {
+                            circle: {
+                                r: 6,
+                                magnet: true,
+                                stroke: '#48bb78',
+                                strokeWidth: 2,
+                                fill: '#ffffff'
+                            }
+                        }
+                    },
+                    'bottom': {
+                        position: 'bottom',
+                        attrs: {
+                            circle: {
+                                r: 6,
+                                magnet: true,
+                                stroke: '#667eea',
+                                strokeWidth: 2,
+                                fill: '#ffffff'
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 添加上下端口
+        node.addPort({ group: 'top', id: 'top' });
+        node.addPort({ group: 'bottom', id: 'bottom' });
+
+        // 存储额外数据
+        node.set('name', name);
+        node.set('description', description || '');
+        node.set('videoUrl', videoUrl || '');
+
+        return node;
+    }
+
+    // 在createNodeElement函数之后添加copyFileToLocal和修改selectVideoFile函数
+
+    // 这个函数仅用于生成相对路径示例
+    function copyFileToLocal(file) {
+        // 在实际应用中，这里应该将文件上传到服务器
+        // 这里我们只返回一个相对路径作为示例
+        return `videos/${file.name}`;
+    }
+
+    // 选择本地视频文件（用于创建节点）
+    function selectVideoFile() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.mp4,.avi,.mov,.wmv,.mkv';
+
+        input.onchange = function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // 验证文件类型
+                if (!file.type.includes('video/') && !file.name.match(/\.(mp4|avi|mov|wmv|mkv)$/i)) {
+                    alert('请选择视频文件（MP4、AVI、MOV、WMV、MKV格式）');
+                    return;
+                }
+
+                // 显示文件名
+                document.getElementById('nodeVideo').value = file.name;
+
+                // 保存文件名和文件对象
+                document.getElementById('nodeVideo').dataset.fileName = file.name;
+                document.getElementById('nodeVideo').dataset.file = file;
+
+                updateStatus(`已选择: ${file.name} (${(file.size/1024/1024).toFixed(2)}MB)`, 'success');
+
+                // 可选：自动填充节点名称（去除扩展名）
+                const nodeNameInput = document.getElementById('nodeName');
+                if (!nodeNameInput.value.trim()) {
+                    const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+                    nodeNameInput.value = nameWithoutExt;
+                }
+            }
+        };
+
+        input.click();
+    }
+
+    // 同样需要修改selectVideoForEdit函数
+    function selectVideoForEdit() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.mp4,.avi,.mov,.wmv,.mkv';
+
+        input.onchange = function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (!file.type.includes('video/') && !file.name.match(/\.(mp4|avi|mov|wmv|mkv)$/i)) {
+                    alert('请选择视频文件（MP4、AVI、MOV、WMV、MKV格式）');
+                    return;
+                }
+
+                document.getElementById('editNodeVideo').value = file.name;
+                document.getElementById('editNodeVideo').dataset.fileName = file.name;
+                document.getElementById('editNodeVideo').dataset.file = file;
+
+                updateStatus(`已选择: ${file.name} (${(file.size/1024/1024).toFixed(2)}MB)`, 'success');
+
+                // 更新节点名称
+                const nodeNameInput = document.getElementById('editNodeName');
+                if (nodeNameInput && !nodeNameInput.value.trim()) {
+                    const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+                    nodeNameInput.value = nameWithoutExt;
+                }
+            }
+        };
+
+        input.click();
+    }
+
+    // 创建连接
+    function createConnection(sourceNode, targetNode, label) {
+        // 检查源节点的下方端口是否已经有3个连接
+        const outgoingConnections = graph.getConnectedLinks(sourceNode, { outbound: true });
+        if (outgoingConnections.length >= 3) {
+            updateStatus('源节点已有3个出向连接', 'error');
+            return null;
+        }
+
+        // 检查目标节点的上方端口是否已经有3个连接
+        const incomingConnections = graph.getConnectedLinks(targetNode, { inbound: true });
+        if (incomingConnections.length >= 3) {
+            updateStatus('目标节点已有3个入向连接', 'error');
+            return null;
+        }
+
+        const link = new joint.shapes.standard.Link({
+            id: `conn_${currentConnectionId++}`,
+            source: {
+                id: sourceNode.id,
+                port: 'bottom',
+                selector: '.bottomPort'
+            },
+            target: {
+                id: targetNode.id,
+                port: 'top',
+                selector: '.topPort'
+            },
+            attrs: {
+                line: {
+                    stroke: '#a0aec0',
+                    strokeWidth: 2,
+                    strokeDasharray: '0',
+                    targetMarker: {
+                        'type': 'path',
+                        'd': 'M 10 -5 0 0 10 5 z',
+                        fill: '#a0aec0'
+                    }
+                },
+                wrapper: {
+                    cursor: 'pointer'
+                }
+            },
+            labels: [{
+                position: 0.5,
+                attrs: {
+                    text: {
+                        text: label || '连接',
+                        fontSize: 12,
+                        fill: '#2d3748'
+                    }
+                }
+            }]
+        });
+
+        // 存储连接数据
+        link.set('label', label || '');
+
+        graph.addCell(link);
+        updateStats();
+
+        return link;
+    }
+
+    // 选择本地视频文件（用于创建节点）
+    function selectVideoFile() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.mp4,.avi,.mov,.wmv,.mkv';
+
+        input.onchange = function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // 验证文件类型
+                if (!file.type.includes('video/') && !file.name.match(/\.(mp4|avi|mov|wmv|mkv)$/i)) {
+                    alert('请选择视频文件（MP4、AVI、MOV、WMV、MKV格式）');
+                    return;
+                }
+
+                // 显示文件名
+                document.getElementById('nodeVideo').value = file.name;
+
+                // 创建临时的Blob URL用于预览
+                const blobUrl = URL.createObjectURL(file);
+                document.getElementById('nodeVideo').dataset.blobUrl = blobUrl;
+                document.getElementById('nodeVideo').dataset.fileName = file.name;
+                document.getElementById('nodeVideo').dataset.fileSize = file.size;
+                document.getElementById('nodeVideo').dataset.fileType = file.type;
+
+                updateStatus(`已选择: ${file.name} (${(file.size/1024/1024).toFixed(2)}MB)`, 'success');
+
+                // 可选：自动填充节点名称（去除扩展名）
+                const nodeNameInput = document.getElementById('nodeName');
+                if (!nodeNameInput.value.trim()) {
+                    const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+                    nodeNameInput.value = nameWithoutExt;
+                }
+            }
+        };
+
+        input.click();
+    }
+
+    // 为编辑表单选择视频文件
+    function selectVideoForEdit() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.mp4,.avi,.mov,.wmv,.mkv';
+
+        input.onchange = function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (!file.type.includes('video/') && !file.name.match(/\.(mp4|avi|mov|wmv|mkv)$/i)) {
+                    alert('请选择视频文件（MP4、AVI、MOV、WMV、MKV格式）');
+                    return;
+                }
+
+                document.getElementById('editNodeVideo').value = file.name;
+                const blobUrl = URL.createObjectURL(file);
+                document.getElementById('editNodeVideo').dataset.blobUrl = blobUrl;
+                document.getElementById('editNodeVideo').dataset.fileName = file.name;
+                document.getElementById('editNodeVideo').dataset.fileSize = file.size;
+                document.getElementById('editNodeVideo').dataset.fileType = file.type;
+
+                updateStatus(`已选择: ${file.name} (${(file.size/1024/1024).toFixed(2)}MB)`, 'success');
+
+                // 更新节点名称
+                const nodeNameInput = document.getElementById('editNodeName');
+                if (nodeNameInput && !nodeNameInput.value.trim()) {
+                    const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+                    nodeNameInput.value = nameWithoutExt;
+                }
+            }
+        };
+
+        input.click();
+    }
+
+    // 创建节点
+    // 创建节点
+    function createNode() {
+        const name = document.getElementById('nodeName').value.trim();
+        const description = document.getElementById('nodeDesc').value.trim();
+        const videoInput = document.getElementById('nodeVideo');
+
+        if (!name) {
+            updateStatus('请输入节点名称', 'error');
+            return;
+        }
+
+        // 只获取文件名
+        let fileName = '';
+        if (videoInput.dataset.fileName) {
+            fileName = videoInput.dataset.fileName;
+        } else if (videoInput.value.trim()) {
+            fileName = videoInput.value.trim();
+        }
+
+        // 创建节点时不保存视频URL，只保存文件名
+        const node = createNodeElement(name, description, '');
+
+        // 存储文件信息
+        node.set('fileName', fileName);
+
+        // 放置到画布中央
+        const paperWidth = paper.el.clientWidth;
+        const paperHeight = paper.el.clientHeight;
+        const x = paperWidth / 2 - 90;
+        const y = paperHeight / 2 - 50;
+
+        node.position(x, y);
+        graph.addCell(node);
+
+        // 清空表单
+        document.getElementById('nodeName').value = '';
+        document.getElementById('nodeDesc').value = '';
+        document.getElementById('nodeVideo').value = '';
+        delete videoInput.dataset.fileName;
+        delete videoInput.dataset.file;
+
+        // 选择新节点
+        selectCell(node);
+        fillEditForm(node);
+
+        updateStatus('节点创建成功', 'success');
+        ensureButtonsVisible();
+    }
+
+    // 选择元素
+    function selectCell(cell) {
+        // 清除之前的选择
+        clearSelection();
+
+        selectedCell = cell;
+
+        // 添加选中样式
+        if (cell.isElement()) {
+            cell.attr({
+                body: {
+                    stroke: '#48bb78',
+                    strokeWidth: 3,
+                    filter: 'url(#drop-shadow)'
+                }
+            });
+        } else if (cell.isLink()) {
+            cell.attr({
+                line: {
+                    stroke: '#48bb78',
+                    strokeWidth: 3
+                }
+            });
+        }
+    }
+
+    // 清除选择
+    function clearSelection() {
+        if (selectedCell) {
+            if (selectedCell.isElement()) {
+                selectedCell.attr({
+                    body: {
+                        stroke: '#667eea',
+                        strokeWidth: 2,
+                        filter: 'none'
+                    }
+                });
+            } else if (selectedCell.isLink()) {
+                selectedCell.attr({
+                    line: {
+                        stroke: '#a0aec0',
+                        strokeWidth: 2
+                    }
+                });
+            }
+            selectedCell = null;
+        }
+    }
+
+    // 填充编辑表单
+    // 填充编辑表单
+    function fillEditForm(cell) {
+        if (!cell || !cell.isElement()) return;
+
+        document.getElementById('editNodeId').value = cell.id;
+        document.getElementById('editNodeName').value = cell.get('name') || '';
+        document.getElementById('editNodeDesc').value = cell.get('description') || '';
+
+        // 只显示文件名
+        const fileName = cell.get('fileName') || '';
+        document.getElementById('editNodeVideo').value = fileName;
+    }
+
+    // 清空编辑表单
+    function clearEditForm() {
+        document.getElementById('editNodeId').value = '';
+        document.getElementById('editNodeName').value = '';
+        document.getElementById('editNodeDesc').value = '';
+        document.getElementById('editNodeVideo').value = '';
+        document.getElementById('connectionList').innerHTML = `
+                <div style="text-align: center; padding: 20px; color: #999;">
+                    选择节点以查看连接
+                </div>
+            `;
+    }
+
+    // 更新节点
+    // 更新节点
+    function updateNode() {
+        if (!selectedCell || !selectedCell.isElement()) {
+            updateStatus('请先选择节点', 'error');
+            return;
+        }
+
+        const name = document.getElementById('editNodeName').value.trim();
+        if (!name) {
+            updateStatus('节点名称不能为空', 'error');
+            return;
+        }
+
+        const videoInput = document.getElementById('editNodeVideo');
+
+        // 如果用户选择了新文件
+        if (videoInput.dataset.fileName) {
+            selectedCell.set('fileName', videoInput.dataset.fileName);
+        } else if (videoInput.value.trim() && videoInput.value !== selectedCell.get('fileName')) {
+            // 用户输入了新路径
+            selectedCell.set('fileName', videoInput.value.trim());
+        }
+
+        selectedCell.set('name', name);
+        selectedCell.set('description', document.getElementById('editNodeDesc').value);
+
+        // 更新显示
+        selectedCell.attr({
+            label: { text: name },
+            description: { text: document.getElementById('editNodeDesc').value || '暂无描述' }
+        });
+
+        updateStatus('节点已更新', 'success');
+    }
+
+    // 删除节点
+    function deleteNode() {
+        if (!selectedCell) {
+            updateStatus('请先选择节点', 'error');
+            return;
+        }
+
+        if (confirm('确定要删除这个节点吗？所有相关连接也会被删除！')) {
+            graph.removeCells([selectedCell]);
+            clearEditForm();
+            updateStatus('节点已删除', 'success');
+            updateStats();
+        }
+    }
+
+    // 克隆节点
+    function cloneNode() {
+        if (!selectedCell || !selectedCell.isElement()) {
+            updateStatus('请先选择节点', 'error');
+            return;
+        }
+
+        const originalNode = selectedCell;
+        const name = originalNode.get('name') + ' - 副本';
+        const description = originalNode.get('description');
+        const videoUrl = originalNode.get('videoUrl');
+        const fileName = originalNode.get('fileName');
+
+        const newNode = createNodeElement(name, description, videoUrl);
+        newNode.set('fileName', fileName);
+
+        const position = originalNode.position();
+        newNode.position(position.x + 50, position.y + 50);
+        graph.addCell(newNode);
+
+        selectCell(newNode);
+        fillEditForm(newNode);
+        updateStatus('节点已克隆', 'success');
+    }
+
+    // 删除选中元素
+    function deleteSelected() {
+        if (!selectedCell) {
+            updateStatus('请先选择元素', 'error');
+            return;
+        }
+
+        if (selectedCell.isElement()) {
+            deleteNode();
+        } else if (selectedCell.isLink()) {
+            graph.removeCells([selectedCell]);
+            clearSelection();
+            updateStatus('连接已删除', 'success');
+            updateStats();
+        }
+    }
+
+    // 设置工具
+    function setTool(tool) {
+        currentTool = tool;
+
+        // 更新工具栏
+        document.querySelectorAll('.cyber-tool-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        if (tool === 'select') {
+            document.getElementById('tool-select').classList.add('active');
+            document.getElementById('connectionHint').style.display = 'none';
+            cancelConnectionMode();
+        } else if (tool === 'connect') {
+            document.getElementById('tool-connect').classList.add('active');
+            startConnection();
+        }
+
+        document.getElementById('statusTool').textContent =
+            tool === 'select' ? '选择' : tool === 'connect' ? '连接' : tool;
+    }
+
+    // 开始连接模式
+    function startConnection() {
+        if (connectionMode) {
+            cancelConnectionMode();
+            return;
+        }
+
+        if (!selectedCell || !selectedCell.isElement()) {
+            updateStatus('请先选择一个节点作为连接源', 'error');
+            return;
+        }
+
+        connectionMode = true;
+        connectionSource = selectedCell;
+
+        // 显示连接提示
+        document.getElementById('connectionHint').style.display = 'block';
+
+        // 高亮源节点
+        connectionSource.attr({
+            body: {
+                stroke: '#f56565',
+                strokeWidth: 3
+            }
+        });
+
+        updateStatus('点击目标节点完成连接', 'info');
+    }
+
+    // 完成连接
+    function completeConnection(targetNode) {
+        if (!connectionSource || !targetNode || !connectionMode) return;
+
+        if (connectionSource.id === targetNode.id) {
+            updateStatus('不能连接到自身', 'error');
+            return;
+        }
+
+        const label = document.getElementById('connectionLabel').value || '连接';
+        const link = createConnection(connectionSource, targetNode, label);
+
+        if (link) {
+            updateStatus('连接创建成功', 'success');
+        }
+
+        cancelConnectionMode();
+    }
+
+    // 取消连接模式
+    function cancelConnectionMode() {
+        if (connectionSource) {
+            // 恢复源节点样式
+            connectionSource.attr({
+                body: {
+                    stroke: '#667eea',
+                    strokeWidth: 2
+                }
+            });
+        }
+
+        connectionMode = false;
+        connectionSource = null;
+
+        document.getElementById('connectionHint').style.display = 'none';
+
+        setTool('select');
+    }
+
+    // 更新连接列表
+    function updateConnectionList(cell) {
+        const list = document.getElementById('connectionList');
+        list.innerHTML = '';
+
+        if (!cell || !cell.isElement()) return;
+
+        // 获取出向连接
+        const outgoingLinks = graph.getConnectedLinks(cell, { outbound: true });
+        // 获取入向连接
+        const incomingLinks = graph.getConnectedLinks(cell, { inbound: true });
+
+        if (outgoingLinks.length === 0 && incomingLinks.length === 0) {
+            list.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: #999;">
+                        此节点暂无连接
+                    </div>
+                `;
+            return;
+        }
+
+        // 显示出向连接
+        if (outgoingLinks.length > 0) {
+            outgoingLinks.forEach(link => {
+                const targetNode = graph.getCell(link.get('target').id);
+                if (targetNode) {
+                    const item = document.createElement('div');
+                    item.className = 'connection-item';
+                    item.innerHTML = `
+                            <div class="connection-info">
+                                连接到: <span class="connection-target">${targetNode.get('name')}</span>
+                            </div>
+                            <button class="btn btn-outline btn-sm" style="padding: 4px 8px; font-size: 12px;"
+                                    onclick="deleteConnection('${link.id}')">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        `;
+                    list.appendChild(item);
+                }
+            });
+        }
+
+        // 显示入向连接
+        if (incomingLinks.length > 0) {
+            incomingLinks.forEach(link => {
+                const sourceNode = graph.getCell(link.get('source').id);
+                if (sourceNode) {
+                    const item = document.createElement('div');
+                    item.className = 'connection-item';
+                    item.innerHTML = `
+                            <div class="connection-info">
+                                来自: <span class="connection-target">${sourceNode.get('name')}</span>
+                            </div>
+                        `;
+                    list.appendChild(item);
+                }
+            });
+        }
+    }
+
+    // 删除连接
+    function deleteConnection(linkId) {
+        const link = graph.getCell(linkId);
+        if (link) {
+            graph.removeCells([link]);
+
+            if (selectedCell) {
+                updateConnectionList(selectedCell);
+            }
+
+            updateStats();
+            updateStatus('连接已删除', 'success');
+        }
+    }
+
+    // 编辑连接
+    function editConnection() {
+        if (!selectedCell || !selectedCell.isLink()) {
+            updateStatus('请先选择一条连接', 'error');
+            return;
+        }
+
+        const currentLabel = selectedCell.get('label') || '';
+        const newLabel = prompt('请输入新的连接标签:', currentLabel);
+
+        if (newLabel !== null) {
+            selectedCell.set('label', newLabel);
+            selectedCell.attr({
+                labels: [{
+                    position: 0.5,
+                    attrs: {
+                        text: {
+                            text: newLabel || '连接',
+                            fontSize: 12,
+                            fill: '#2d3748'
+                        }
+                    }
+                }]
+            });
+            updateStatus('连接标签已更新', 'success');
+        }
+    }
+
+    // 自动布局
+    function autoLayout() {
+        const elements = graph.getElements();
+        if (elements.length === 0) return;
+
+        // 找出根节点（没有入向连接的节点）
+        const rootCandidates = elements.filter(node => {
+            const incomingLinks = graph.getConnectedLinks(node, { inbound: true });
+            return incomingLinks.length === 0;
+        });
+
+        const root = rootCandidates.length > 0 ? rootCandidates[0] : elements[0];
+
+        // 设置根节点位置
+        const paperWidth = paper.el.clientWidth;
+        root.position(paperWidth / 2 - 90, 100);
+
+        // 递归布局子节点
+        const visited = new Set();
+        const queue = [{ node: root, level: 0, index: 0 }];
+        visited.add(root.id);
+
+        while (queue.length > 0) {
+            const { node, level, index } = queue.shift();
+
+            // 获取子节点
+            const childLinks = graph.getConnectedLinks(node, { outbound: true });
+            const children = childLinks.map(link => graph.getCell(link.get('target').id))
+                .filter(child => child && !visited.has(child.id));
+
+            if (children.length > 0) {
+                const levelY = 100 + (level + 1) * 150;
+                const spacing = 250;
+                const startX = node.position().x + node.size().width / 2 - (children.length - 1) * spacing / 2;
+
+                children.forEach((child, i) => {
+                    child.position(startX + i * spacing, levelY);
+                    visited.add(child.id);
+                    queue.push({ node: child, level: level + 1, index: i });
+                });
+            }
+        }
+
+        // 更新连接线
+        graph.getLinks().forEach(link => {
+            link.updateVertices();
+        });
+
+        updateStatus('自动布局完成', 'success');
+    }
+
+    // 更新统计信息
+    function updateStats() {
+        const nodeCount = graph.getElements().length;
+        const connectionCount = graph.getLinks().length;
+
+        document.getElementById('nodeCount').textContent = nodeCount;
+        document.getElementById('connectionCount').textContent = connectionCount;
+        document.getElementById('statusNodeCount').textContent = nodeCount;
+        document.getElementById('statusConnectionCount').textContent = connectionCount;
+    }
+
+    // 更新缩放显示
+    function updateZoomDisplay() {
+        const scale = paper.scale();
+        const zoomPercent = Math.round(scale.sx * 100);
+        document.getElementById('statusZoom').textContent = zoomPercent + '%';
+    }
+
+    // 更新状态消息
+    function updateStatus(message, type = 'info') {
+        const statusMessage = document.getElementById('statusMessage');
+        statusMessage.textContent = message;
+
+        switch(type) {
+            case 'success':
+                statusMessage.style.color = '#48bb78';
+                break;
+            case 'error':
+                statusMessage.style.color = '#f56565';
+                break;
+            case 'warning':
+                statusMessage.style.color = '#ed8936';
+                break;
+            case 'info':
+                statusMessage.style.color = '#667eea';
+                break;
+            default:
+                statusMessage.style.color = '#cbd5e0';
+        }
+    }
+
+    // 保存树
+    function saveTree() {
+        const elements = graph.getElements();
+        const links = graph.getLinks();
+
+        const treeData = {
+            elements: elements.map(el => ({
+                id: el.id,
+                name: el.get('name'),
+                description: el.get('description'),
+                videoUrl: el.get('videoUrl'),
+                fileName: el.get('fileName'),
+                fileSize: el.get('fileSize'),
+                fileType: el.get('fileType'),
+                position: el.position(),
+                size: el.size(),
+                attrs: el.attributes.attrs
+            })),
+            links: links.map(link => ({
+                id: link.id,
+                source: link.get('source'),
+                target: link.get('target'),
+                label: link.get('label') || '',
+                attrs: link.attributes.attrs
+            })),
+            currentNodeId: currentNodeId,
+            currentConnectionId: currentConnectionId,
+            serverTreeId: serverTreeId,
+            name: localStorage.getItem('videoTreeName') || '',
+            saveTime: new Date().toISOString()
+        };
+
+        localStorage.setItem('videoTreeData', JSON.stringify(treeData));
+        updateStatus('树已保存到本地存储', 'success');
+    }
+
+    // 保存到服务器：保存后即可在「创建课堂」的视频树下拉列表中选择
+    function saveToServer() {
+        const elements = graph.getElements();
+        if (elements.length === 0) {
+            updateStatus('画布为空，无法保存到服务器', 'error');
+            return;
+        }
+
+        const savedName = localStorage.getItem('videoTreeName');
+        const defaultName = savedName || ('视频树 ' + new Date().toLocaleDateString());
+        const input = prompt('请输入视频树名称（创建课堂时会出现在下拉列表中）', defaultName);
+        if (input === null) {
+            return;
+        }
+        const name = input.trim();
+        if (!name) {
+            updateStatus('视频树名称不能为空', 'error');
+            return;
+        }
+
+        // 根节点：没有入向连接的节点
+        const inbound = new Set();
+        graph.getLinks().forEach(link => {
+            const target = link.get('target');
+            if (target && target.id) {
+                inbound.add(target.id);
+            }
+        });
+        const roots = elements.filter(el => !inbound.has(el.id));
+        if (roots.length === 0) {
+            updateStatus('未找到根节点，请检查连接是否形成了环路', 'error');
+            return;
+        }
+        if (roots.length > 1) {
+            updateStatus(`检测到 ${roots.length} 个根节点，请先把节点连接成一棵树再保存`, 'error');
+            return;
+        }
+
+        let tree;
+        try {
+            const treeId = serverTreeId || ('tree_' + Math.random().toString(36).substring(2, 10));
+            tree = {
+                id: treeId,
+                name: name,
+                description: '',
+                teacherId: document.getElementById('teacherId').value,
+                nodeCount: elements.length,
+                root: buildServerNode(roots[0], treeId, [])
+            };
+        } catch (error) {
+            updateStatus(error.message, 'error');
+            return;
+        }
+
+        const existed = !!serverTreeId;
+        const url = existed ? `/video-tree/update/${encodeURIComponent(serverTreeId)}` : '/video-tree/create';
+
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(tree)
+        })
+            .then(response => response.json().then(data => ({ ok: response.ok, data })))
+            .then(result => {
+                if (!result.ok || !result.data || !result.data.success) {
+                    updateStatus('保存失败：' + ((result.data && result.data.message) || '未知错误'), 'error');
+                    return;
+                }
+                serverTreeId = result.data.tree.id;
+                localStorage.setItem('videoTreeServerId', serverTreeId);
+                localStorage.setItem('videoTreeName', name);
+                updateStatus('已保存到服务器：' + name, 'success');
+            })
+            .catch(error => {
+                updateStatus('保存失败：' + error.message, 'error');
+            });
+    }
+
+    // 把画布节点转成后端 VideoNode（边里嵌入 targetNode，保证重启后结构不丢失）
+    function buildServerNode(element, treeId, path) {
+        if (path.indexOf(element.id) !== -1) {
+            throw new Error('画布中存在环路（节点 ' + element.get('name') + '），请先修正连接再保存');
+        }
+        const nextPath = path.concat(element.id);
+        const position = element.position();
+        const size = element.size();
+
+        const node = {
+            id: treeId + '_' + element.id,
+            name: element.get('name') || '未命名节点',
+            description: element.get('description') || '',
+            videoUrl: element.get('videoUrl') || '',
+            x: Math.round(position.x),
+            y: Math.round(position.y),
+            width: Math.round(size.width),
+            height: Math.round(size.height),
+            edges: []
+        };
+
+        graph.getLinks().forEach(link => {
+            const source = link.get('source');
+            const target = link.get('target');
+            if (!source || source.id !== element.id || !target || !target.id) {
+                return;
+            }
+            const targetElement = graph.getCell(target.id);
+            if (!targetElement || !targetElement.isElement()) {
+                return;
+            }
+            const child = buildServerNode(targetElement, treeId, nextPath);
+            node.edges.push({
+                targetNodeId: child.id,
+                targetNode: child,
+                keyword: link.get('label') || 'default',
+                weight: 1
+            });
+        });
+
+        return node;
+    }
+
+    // 加载树
+    function loadTree() {
+        const saved = localStorage.getItem('videoTreeData');
+        if (!saved) {
+            updateStatus('没有找到保存的树', 'error');
+            return;
+        }
+
+        try {
+            const treeData = JSON.parse(saved);
+
+            // 恢复服务器端树的关联，避免重复保存时创建新的树
+            if (treeData.serverTreeId) {
+                serverTreeId = treeData.serverTreeId;
+                localStorage.setItem('videoTreeServerId', serverTreeId);
+            }
+            if (treeData.name) {
+                localStorage.setItem('videoTreeName', treeData.name);
+            }
+
+            // 清除当前图形
+            graph.clear();
+
+            // 恢复计数器
+            currentNodeId = treeData.currentNodeId || 1;
+            currentConnectionId = treeData.currentConnectionId || 1;
+
+            // 创建节点
+            treeData.elements.forEach(elData => {
+                const node = createNodeElement(elData.name, elData.description, elData.videoUrl);
+
+                // 恢复文件信息
+                node.set('fileName', elData.fileName);
+                node.set('fileSize', elData.fileSize);
+                node.set('fileType', elData.fileType);
+
+                graph.addCell(node);
+            });
+
+            // 创建连接
+            treeData.links.forEach(linkData => {
+                const link = new joint.shapes.standard.Link({
+                    id: linkData.id,
+                    source: linkData.source,
+                    target: linkData.target,
+                    attrs: linkData.attrs
+                });
+
+                link.set('label', linkData.label || '');
+
+                graph.addCell(link);
+            });
+
+            updateStats();
+            clearSelection();
+            clearEditForm();
+
+            updateStatus('树已加载', 'success');
+            ensureButtonsVisible();
+        } catch (e) {
+            updateStatus('加载失败: ' + e.message, 'error');
+        }
+    }
+
+    // 导出树
+    // 导出树
+    function exportTree() {
+        const elements = graph.getElements();
+        const links = graph.getLinks();
+
+        const treeData = {
+            metadata: {
+                name: "视频树项目",
+                created: new Date().toISOString(),
+                version: "1.0",
+                type: "video-tree"
+            },
+            elements: elements.map(el => ({
+                id: el.id,
+                name: el.get('name'),
+                description: el.get('description'),
+                videoUrl: '',  // 清空视频URL，只保存文件名
+                fileName: el.get('fileName') || '',
+                position: el.position(),
+                size: el.size()
+            })),
+            links: links.map(link => ({
+                id: link.id,
+                source: link.get('source'),
+                target: link.get('target'),
+                label: link.get('label') || ''
+            })),
+            exportTime: new Date().toISOString()
+        };
+
+        const dataStr = JSON.stringify(treeData, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+
+        const exportFileDefaultName = `视频树_${new Date().getTime()}.json`;
+
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileDefaultName);
+        document.body.appendChild(linkElement);
+        linkElement.click();
+        document.body.removeChild(linkElement);
+
+        updateStatus('视频树已导出为JSON文件（包含文件名）', 'success');
+    }
+
+    // 导入树
+    function importTree() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json,.txt';
+
+        input.onchange = function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const treeData = JSON.parse(e.target.result);
+
+                    // 清除当前图形
+                    graph.clear();
+                    currentNodeId = 1;
+                    currentConnectionId = 1;
+
+                    // 创建节点
+                    if (treeData.elements && Array.isArray(treeData.elements)) {
+                        treeData.elements.forEach(elData => {
+                            const node = createNodeElement(elData.name, elData.description, elData.videoUrl);
+
+                            // 恢复文件信息
+                            node.set('fileName', elData.fileName);
+                            node.set('fileSize', elData.fileSize);
+                            node.set('fileType', elData.fileType);
+
+                            if (elData.position) {
+                                node.position(elData.position.x, elData.position.y);
+                            } else {
+                                node.position(100 + Math.random() * 300, 100 + Math.random() * 300);
+                            }
+                            graph.addCell(node);
+                        });
+                    }
+
+                    // 创建连接
+                    if (treeData.links && Array.isArray(treeData.links)) {
+                        treeData.links.forEach(linkData => {
+                            const sourceNode = graph.getCell(linkData.source.id);
+                            const targetNode = graph.getCell(linkData.target.id);
+
+                            if (sourceNode && targetNode) {
+                                createConnection(sourceNode, targetNode, linkData.label || '');
+                            }
+                        });
+                    }
+
+                    updateStats();
+                    updateStatus('树已从JSON文件导入', 'success');
+                    ensureButtonsVisible();
+                } catch (error) {
+                    updateStatus('导入失败: ' + error.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        };
+
+        input.click();
+    }
+
+    // 缩放功能
+    function zoomIn() {
+        const scale = paper.scale();
+        paper.scale(scale.sx * 1.2, scale.sy * 1.2);
+        updateZoomDisplay();
+    }
+
+    function zoomOut() {
+        const scale = paper.scale();
+        paper.scale(scale.sx / 1.2, scale.sy / 1.2);
+        updateZoomDisplay();
+    }
+
+    function resetZoom() {
+        paper.scale(1, 1);
+        updateZoomDisplay();
+    }
+
+    function fitToScreen() {
+        paper.scaleContentToFit();
+        updateZoomDisplay();
+    }
+
+    function centerContent() {
+        const elements = graph.getElements();
+        if (elements.length === 0) return;
+
+        const paperWidth = paper.el.clientWidth;
+        const paperHeight = paper.el.clientHeight;
+
+        // 计算所有元素的边界
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+        elements.forEach(el => {
+            const pos = el.position();
+            const size = el.size();
+            minX = Math.min(minX, pos.x);
+            minY = Math.min(minY, pos.y);
+            maxX = Math.max(maxX, pos.x + size.width);
+            maxY = Math.max(maxY, pos.y + size.height);
+        });
+
+        const contentWidth = maxX - minX;
+        const contentHeight = maxY - minY;
+        const centerX = minX + contentWidth / 2;
+        const centerY = minY + contentHeight / 2;
+
+        paper.translate(
+            paperWidth / 2 - centerX,
+            paperHeight / 2 - centerY
+        );
+
+        updateStatus('内容已居中', 'success');
+    }
+
+    function showGridToggle() {
+        showGrid = !showGrid;
+        paper.options.drawGrid = showGrid ? { name: 'mesh' } : false;
+        paper.drawGrid();
+
+        updateStatus('网格显示: ' + (showGrid ? '开启' : '关闭'), showGrid ? 'success' : 'info');
+    }
+
+    function clearAll() {
+        if (confirm('确定要清空整个画布吗？此操作不可撤销！')) {
+            graph.clear();
+            currentNodeId = 1;
+            currentConnectionId = 1;
+            clearSelection();
+            clearEditForm();
+            updateStats();
+            updateStatus('画布已清空', 'success');
+        }
+    }
+
+    // 设置快捷键
+    function setupShortcuts() {
+        document.addEventListener('keydown', function(e) {
+            switch(e.key) {
+                case 'Escape':
+                    if (connectionMode) {
+                        cancelConnectionMode();
+                    } else {
+                        clearSelection();
+                        clearEditForm();
+                    }
+                    break;
+                case 'Delete':
+                    deleteSelected();
+                    break;
+                case 's':
+                case 'S':
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        saveTree();
+                    }
+                    break;
+                case 'l':
+                case 'L':
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        loadTree();
+                    }
+                    break;
+                case '+':
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        zoomIn();
+                    }
+                    break;
+                case '-':
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        zoomOut();
+                    }
+                    break;
+                case '0':
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        fitToScreen();
+                    }
+                    break;
+                case 'c':
+                case 'C':
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        startConnection();
+                    }
+                    break;
+                case 'a':
+                case 'A':
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        autoLayout();
+                    }
+                    break;
+                case 'e':
+                case 'E':
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        exportTree();
+                    }
+                    break;
+            }
+        });
+    }
+</script>
+</body>
+</html>

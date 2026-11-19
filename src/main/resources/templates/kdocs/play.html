@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PPT播放 - 金山文档</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/cyberpunk-2077.css}">
+    <style>
+        body {
+            height: 100vh;
+            overflow: hidden;
+        }
+        .play-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .play-header {
+            background: rgba(10, 10, 10, 0.9);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--cyber-cyan);
+            z-index: 100;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+        }
+        .play-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+        .ppt-frame-container {
+            flex: 1;
+            position: relative;
+            background: #1a1a1a;
+        }
+        .kdocs-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .comments-panel {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 350px;
+            height: 100%;
+            background: rgba(10, 10, 20, 0.95);
+            border-left: 2px solid var(--cyber-cyan);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+            transform: translateX(0);
+            z-index: 10;
+            box-shadow: -5px 0 20px rgba(0, 255, 255, 0.4);
+        }
+        .comments-panel.hidden {
+            transform: translateX(100%);
+        }
+        .comments-toggle {
+            position: absolute;
+            top: 50%;
+            left: -30px;
+            transform: translateY(-50%);
+            background: var(--cyber-bg-light);
+            color: var(--cyber-cyan);
+            padding: 8px;
+            text-align: center;
+            cursor: pointer;
+            border-top-left-radius: 6px;
+            border-bottom-left-radius: 6px;
+            font-size: 0.8rem;
+            height: 30px;
+            width: 30px;
+            box-sizing: border-box;
+            border: 1px solid var(--cyber-cyan);
+            border-right: none;
+            z-index: 11;
+            box-shadow: -2px 0 5px rgba(0, 255, 255, 0.3);
+        }
+        .comments-toggle:hover {
+            background: var(--cyber-cyan);
+            color: var(--cyber-bg-dark);
+        }
+        .comments-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--cyber-cyan);
+            color: var(--cyber-cyan) !important;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.7) !important;
+        }
+        
+        .comments-header h3 {
+            color: var(--cyber-cyan) !important;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.7) !important;
+        }
+        .comments-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .comment-item {
+            background: rgba(0, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            animation: slideIn 0.3s ease;
+            border-left: 4px solid var(--cyber-cyan);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+        .comment-item.teacher {
+            background: rgba(156, 39, 176, 0.4);
+            border-left: 4px solid #e040fb;
+            box-shadow: 0 0 15px rgba(156, 39, 176, 0.4);
+            border: 1px solid rgba(156, 39, 176, 0.3);
+        }
+        .comment-item.student {
+            background: rgba(0, 255, 255, 0.3);
+            border-left: 4px solid var(--cyber-cyan);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+        .comment-author {
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+            color: var(--cyber-cyan) !important;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.7) !important;
+        }
+        .comment-item.teacher .comment-author {
+            color: #e040fb !important;
+            text-shadow: 0 0 10px rgba(156, 39, 176, 0.7) !important;
+        }
+        .comment-content {
+            font-size: 0.95rem;
+            line-height: 1.4;
+            color: var(--cyber-green) !important;
+            text-shadow: 0 0 10px rgba(0, 255, 0, 0.7) !important;
+            font-weight: 500;
+        }
+        .comment-time {
+            font-size: 0.8rem;
+            color: var(--cyber-cyan) !important;
+            margin-top: 5px;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.7) !important;
+        }
+        .comments-input {
+            padding: 20px;
+            border-top: 2px solid var(--cyber-cyan);
+            background: rgba(0, 0, 0, 0.5);
+        }
+        
+        .input-group .btn {
+            background: rgba(0, 255, 255, 0.4) !important;
+            border: 2px solid var(--cyber-cyan) !important;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.6) !important;
+        }
+        
+        .input-group .btn:hover {
+            background: rgba(0, 255, 255, 0.5) !important;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.8) !important;
+        }
+        .control-panel {
+            background: rgba(10, 10, 10, 0.9);
+            padding: 15px 25px;
+            border-top: 1px solid var(--cyber-cyan);
+            display: flex;
+            gap: 15px;
+            z-index: 50;
+            box-shadow: 0 -5px 15px rgba(0, 255, 255, 0.2);
+        }
+        .fullscreen .control-panel {
+            display: none;
+        }
+        .control-balls {
+            display: none;
+        }
+        .fullscreen .control-balls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: absolute;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            z-index: 50;
+            transition: all 0.3s ease;
+        }
+        .control-ball {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid var(--cyber-cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            opacity: 0;
+            transform: translateX(-20px);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+        .fullscreen .control-balls:hover .control-ball {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .fullscreen .control-balls .control-ball:first-child {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .control-ball:hover {
+            background: var(--cyber-cyan);
+            color: var(--cyber-bg-dark);
+            transform: scale(1.1) translateX(0);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+        }
+        .control-ball i {
+            font-size: 20px;
+            color: var(--cyber-cyan);
+        }
+        .control-ball:hover i {
+            color: var(--cyber-bg-dark);
+        }
+        .control-btn {
+            background: var(--cyber-bg-light);
+            border: 1px solid var(--cyber-cyan);
+            color: var(--cyber-cyan) !important;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .control-btn:hover {
+            background: var(--cyber-cyan);
+            color: var(--cyber-bg-dark) !important;
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+            text-shadow: none;
+        }
+        .back-btn {
+            background: var(--cyber-bg-light);
+            border: 1px solid var(--cyber-cyan);
+            color: var(--cyber-cyan) !important;
+            padding: 8px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+            text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+        }
+        .back-btn:hover {
+            background: var(--cyber-cyan);
+            color: var(--cyber-bg-dark) !important;
+            text-shadow: none;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-online {
+            background-color: var(--cyber-green);
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 10px var(--cyber-green);
+        }
+        .status-offline {
+            background-color: var(--cyber-gray);
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(0, 255, 0, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(0, 255, 0, 0);
+            }
+        }
+    </style>
+<script src="/js/app-config.js"></script>
+</head>
+<body>
+    <div class="play-container">
+        <!-- 头部导航 -->
+        <div class="play-header">
+            <div>
+                <a th:href="@{/kdocs(teacherId=${teacherId})}" class="back-btn">
+                    <i class="fas fa-arrow-left"></i> 返回PPT系统
+                </a>
+                <span class="ms-3" style="color: var(--cyber-cyan); text-shadow: 0 0 10px rgba(0, 255, 255, 0.8); font-weight: bold;">
+                    <i class="fas fa-file-powerpoint"></i>
+                    <span>金山文档PPT播放</span>
+                </span>
+            </div>
+            <div class="d-flex align-items-center gap-4">
+                <div class="classroom-id-container">
+                    <span style="color: var(--cyber-cyan); text-shadow: 0 0 10px rgba(0, 255, 255, 0.8); font-weight: bold;">
+                        <span class="status-indicator status-online" id="websocketStatus"></span>
+                        <i class="fas fa-user"></i> 教师
+                    </span>
+                </div>
+                <div class="classroom-id-container">
+                    <span style="color: var(--cyber-cyan); text-shadow: 0 0 10px rgba(0, 255, 255, 0.8); font-weight: bold;">课堂ID:</span>
+                    <span id="classroomId" class="mx-2 font-weight-bold" style="color: var(--cyber-green); text-shadow: 0 0 10px rgba(0, 255, 0, 0.8); font-size: 1.1rem;">[[${classroomId}]]</span>
+                    <button id="copyClassroomIdBtn" class="btn btn-sm btn-primary" onclick="copyClassroomId()">
+                        <i class="fas fa-copy"></i> 复制
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 播放内容 -->
+        <div class="play-content">
+            <!-- PPT播放框架 -->
+            <div class="ppt-frame-container">
+                <iframe
+                    class="kdocs-frame"
+                    th:src="${kdocsUrl}"
+                    allowfullscreen>
+                </iframe>
+                
+                <!-- 评论面板 -->
+                <div class="comments-panel" id="commentsPanel">
+                    <div class="comments-toggle" onclick="toggleComments()">
+                        <i class="fas fa-chevron-left"></i>
+                    </div>
+                    
+                    <div class="comments-header">
+                        <h3><i class="fas fa-comments"></i> 评论区</h3>
+                    </div>
+                    
+                    <div class="comments-list" id="commentsList">
+                        <!-- 评论会动态添加到这里 -->
+                        <div class="comment-item teacher">
+                            <div class="comment-author">教师</div>
+                            <div class="comment-content">欢迎使用金山文档PPT系统！</div>
+                            <div class="comment-time">刚刚</div>
+                        </div>
+                    </div>
+                    
+                    <div class="comments-input">
+                        <div class="input-group">
+                        <input type="text" id="commentInput" class="form-control" placeholder="输入评论...">
+                        <button class="btn btn-primary" onclick="sendComment()">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 控制面板 -->
+        <div class="control-panel" id="controlPanel">
+            <button class="control-btn" onclick="refreshKdocs()">
+                <i class="fas fa-redo"></i> 刷新
+            </button>
+            <button class="control-btn" onclick="toggleFullscreen()">
+                <i class="fas fa-expand"></i> 全屏
+            </button>
+            <button class="control-btn" onclick="openInNewWindow()">
+                <i class="fas fa-external-link-alt"></i> 新窗口
+            </button>
+            <button class="control-btn" onclick="clearComments()">
+                <i class="fas fa-trash"></i> 清空评论
+            </button>
+            <button class="control-btn" id="toggleAllMessagesBtn" onclick="toggleStudentAllMessages()">
+                <i class="fas fa-ban"></i> 禁言
+            </button>
+        </div>
+
+        <!-- 全屏模式小球控制面板 -->
+        <div class="control-balls">
+            <div class="control-ball" title="控制菜单">
+                <i class="fas fa-cog"></i>
+            </div>
+            <div class="control-ball" onclick="refreshKdocs()" title="刷新">
+                <i class="fas fa-redo"></i>
+            </div>
+            <div class="control-ball" onclick="toggleFullscreen()" title="退出全屏">
+                <i class="fas fa-compress"></i>
+            </div>
+            <div class="control-ball" onclick="openInNewWindow()" title="新窗口">
+                <i class="fas fa-external-link-alt"></i>
+            </div>
+            <div class="control-ball" onclick="clearComments()" title="清空评论">
+                <i class="fas fa-trash"></i>
+            </div>
+            <div class="control-ball" onclick="toggleStudentAllMessages()" title="禁言">
+                <i class="fas fa-ban"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // 全局变量
+        let comments = [];
+        let websocket = null;
+        let isStudentCommentsDisabled = false;
+        let isStudentAllMessagesDisabled = false;
+        const teacherId = "[[${teacherId}]]";
+        let classroomId = "[[${classroomId}]]";
+        
+        // 优化：WebSocket消息队列
+        let messageQueue = [];
+        let messageBatchTimer = null;
+        const messageBatchInterval = 100; // 100ms批量处理一次
+        
+        // 优化：PPT资源加载器
+        let pptResourceLoader = null;
+        
+        // 确保有课堂ID，如果没有则生成一个
+        if (!classroomId || classroomId === 'null' || classroomId === 'undefined') {
+            classroomId = generateClassroomId();
+            document.getElementById('classroomId').textContent = classroomId;
+        }
+        
+        const wsUrl = AppConfig.ws('/ws/teacher/' + classroomId);
+        
+        // 生成随机课堂ID
+        function generateClassroomId() {
+            const prefix = 'PPT';
+            const timestamp = Date.now().toString().slice(-8);
+            const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+            return `${prefix}-${timestamp}-${random}`;
+        }
+        
+        // 复制课堂ID
+        function copyClassroomId() {
+            const classroomIdElement = document.getElementById('classroomId');
+            if (classroomIdElement) {
+                const classroomId = classroomIdElement.textContent;
+                
+                // 使用Clipboard API复制文本
+                navigator.clipboard.writeText(classroomId)
+                    .then(() => {
+                        // 显示复制成功的提示
+                        const btn = document.getElementById('copyClassroomIdBtn');
+                        const originalText = btn.innerHTML;
+                        btn.innerHTML = '<i class="fas fa-check"></i> 已复制';
+                        btn.className = 'btn btn-sm btn-success';
+                        
+                        // 2秒后恢复按钮状态
+                        setTimeout(() => {
+                            btn.innerHTML = originalText;
+                            btn.className = 'btn btn-sm btn-primary';
+                        }, 2000);
+                        
+                        console.log('课堂ID已复制到剪贴板:', classroomId);
+                    })
+                    .catch(err => {
+                        console.error('复制失败:', err);
+                    });
+            }
+        }
+
+        // 初始化WebSocket连接
+        function initWebSocket() {
+            try {
+                websocket = new WebSocket(wsUrl);
+                
+                websocket.onopen = function() {
+                    console.log('WebSocket连接成功');
+                    document.getElementById('websocketStatus').className = 'status-indicator status-online';
+                    sendWebSocketMessage('TEACHER_JOIN', { classroomId: classroomId, teacherId: teacherId });
+                    // 当教师进入PPT播放页面时，禁用视频学生端的弹幕
+                    sendWebSocketMessage('TOGGLE_STUDENT_DANMAKU', {
+                        disabled: true
+                    });
+                };
+                
+                websocket.onmessage = function(event) {
+                    console.log('收到WebSocket消息:', event.data);
+                    handleWebSocketMessage(event.data);
+                };
+                
+                websocket.onclose = function() {
+                    console.log('WebSocket连接关闭');
+                    document.getElementById('websocketStatus').className = 'status-indicator status-offline';
+                    // 尝试重连
+                    setTimeout(initWebSocket, 3000);
+                };
+                
+                websocket.onerror = function(error) {
+                    console.error('WebSocket错误:', error);
+                    document.getElementById('websocketStatus').className = 'status-indicator status-offline';
+                };
+            } catch (error) {
+                console.error('初始化WebSocket失败:', error);
+                document.getElementById('websocketStatus').className = 'status-indicator status-offline';
+            }
+        }
+
+        // 当页面卸载时，启用视频学生端的弹幕
+        window.addEventListener('beforeunload', function() {
+            if (websocket && websocket.readyState === WebSocket.OPEN) {
+                sendWebSocketMessage('TOGGLE_STUDENT_DANMAKU', {
+                    disabled: false
+                });
+            }
+        });
+
+        // 发送WebSocket消息
+        function sendWebSocketMessage(type, data) {
+            // 将消息添加到队列
+            messageQueue.push({ type, data });
+            
+            // 清除之前的定时器
+            if (messageBatchTimer) {
+                clearTimeout(messageBatchTimer);
+            }
+            
+            // 设置新的定时器，批量处理消息
+            messageBatchTimer = setTimeout(() => {
+                processMessageBatch();
+            }, messageBatchInterval);
+        }
+
+        // 批量处理WebSocket消息
+        function processMessageBatch() {
+            if (websocket && websocket.readyState === WebSocket.OPEN && messageQueue.length > 0) {
+                // 如果只有一条消息，直接发送
+                if (messageQueue.length === 1) {
+                    const message = messageQueue[0];
+                    const jsonMessage = JSON.stringify({
+                        type: message.type,
+                        data: message.data
+                    });
+                    websocket.send(jsonMessage);
+                } else {
+                    // 批量发送多条消息
+                    const batchMessage = JSON.stringify({
+                        type: 'BATCH_MESSAGES',
+                        messages: messageQueue
+                    });
+                    websocket.send(batchMessage);
+                    console.log('批量发送WebSocket消息:', messageQueue.length, '条');
+                }
+                
+                // 清空队列
+                messageQueue.length = 0;
+            } else {
+                console.error('WebSocket未连接或消息队列为空');
+            }
+        }
+
+        // 处理WebSocket消息
+        function handleWebSocketMessage(message) {
+            try {
+                const data = JSON.parse(message);
+                
+                switch (data.type) {
+                    case 'COMMENT_RECEIVED':
+                        handleCommentReceived(data.data);
+                        break;
+                    case 'STUDENT_JOINED':
+                        handleStudentJoined(data);
+                        break;
+                    case 'STUDENT_LEFT':
+                        handleStudentLeft(data);
+                        break;
+                    case 'WELCOME':
+                        console.log('收到欢迎消息:', data.message);
+                        break;
+                    case 'ONLINE_STUDENTS':
+                        console.log('收到在线学生列表:', data);
+                        // 可以在这里更新在线学生数量显示
+                        break;
+                    case 'CLASSROOM_STATUS':
+                        console.log('收到课堂状态:', data);
+                        // 可以在这里更新课堂状态显示
+                        break;
+                    case 'TEACHER_COMMENT_SENT':
+                        console.log('教师评论发送成功:', data);
+                        // 清空评论输入框
+                        document.getElementById('commentInput').value = '';
+                        break;
+                    case 'STUDENT_HEARTBEAT':
+                        console.log('收到学生心跳消息:', data);
+                        // 心跳消息不需要特殊处理，只是确认学生在线
+                        break;
+                    default:
+                        console.log('未知消息类型:', data.type);
+                }
+            } catch (error) {
+                console.error('解析WebSocket消息失败:', error);
+            }
+        }
+
+        // 处理收到的评论
+        function handleCommentReceived(commentData) {
+            console.log('处理评论数据:', commentData);
+            // 如果禁用学生所有消息或评论，直接返回
+            if ((isStudentAllMessagesDisabled || isStudentCommentsDisabled) && !(commentData.isTeacher || commentData.teacher)) {
+                console.log('学生评论已禁用，忽略评论:', commentData.content);
+                return;
+            }
+            
+            const comment = {
+                id: commentData.id || Date.now(),
+                author: commentData.isTeacher || commentData.teacher ? '教师' : (commentData.studentName || '学生'),
+                type: commentData.isTeacher || commentData.teacher ? 'teacher' : 'student',
+                content: commentData.content,
+                time: new Date().toLocaleTimeString()
+            };
+            
+            console.log('创建评论对象:', comment);
+            comments.push(comment);
+            addCommentToUI(comment);
+        }
+
+        // 处理学生加入
+        function handleStudentJoined(data) {
+            const comment = {
+                id: Date.now(),
+                author: '系统',
+                type: 'teacher',
+                content: '有学生加入了课堂',
+                time: new Date().toLocaleTimeString()
+            };
+            addCommentToUI(comment);
+        }
+
+        // 处理学生离开
+        function handleStudentLeft(data) {
+            const comment = {
+                id: Date.now(),
+                author: '系统',
+                type: 'teacher',
+                content: '有学生离开了课堂',
+                time: new Date().toLocaleTimeString()
+            };
+            addCommentToUI(comment);
+        }
+
+        // 添加评论到UI
+        function addCommentToUI(comment) {
+            console.log('添加评论到UI:', comment);
+            console.log('虚拟评论列表实例:', virtualCommentsList);
+            if (virtualCommentsList) {
+                console.log('使用虚拟评论列表添加评论');
+                virtualCommentsList.addComment(comment);
+            } else {
+                console.log('使用降级方案：直接操作DOM');
+                // 降级方案：直接操作DOM
+                const commentsList = document.getElementById('commentsList');
+                console.log('评论列表元素:', commentsList);
+                if (commentsList) {
+                    const commentElement = document.createElement('div');
+                    commentElement.className = `comment-item ${comment.type}`;
+                    commentElement.innerHTML = `
+                        <div class="comment-author">${comment.author}</div>
+                        <div class="comment-content">${comment.content}</div>
+                        <div class="comment-time">${comment.time}</div>
+                    `;
+                    commentsList.appendChild(commentElement);
+                    commentsList.scrollTop = commentsList.scrollHeight;
+                    console.log('评论元素已添加到DOM');
+                }
+            }
+        }
+
+        // 发送评论
+        function sendComment() {
+            const commentInput = document.getElementById('commentInput');
+            const content = commentInput.value.trim();
+            
+            if (content) {
+                commentInput.value = '';
+                
+                // 通过WebSocket发送评论给学生
+                sendWebSocketMessage('SEND_TEACHER_COMMENT', {
+                    comment: {
+                        content: content,
+                        teacherName: '教师'
+                    }
+                });
+            }
+        }
+
+        // 优化：虚拟滚动评论列表
+        class VirtualCommentsList {
+            constructor(container, itemHeight = 80) {
+                this.container = container;
+                this.itemHeight = itemHeight;
+                this.comments = [];
+                this.startIndex = 0;
+                this.endIndex = 0;
+                this.renderedComments = new Map();
+                this.init();
+                console.log('虚拟评论列表初始化完成，容器:', container);
+            }
+            
+            init() {
+                this.container.style.position = 'relative';
+                this.container.style.overflowY = 'auto';
+                this.container.style.height = '100%';
+                this.container.addEventListener('scroll', () => this.handleScroll());
+                console.log('虚拟评论列表初始化样式完成');
+            }
+            
+            setComments(comments) {
+                console.log('设置评论列表:', comments.length, '条评论');
+                this.comments = comments;
+                this.updateContainerHeight();
+                this.render();
+            }
+            
+            addComment(comment) {
+                console.log('添加评论:', comment);
+                this.comments.push(comment);
+                this.updateContainerHeight();
+                this.render();
+                console.log('滚动到底部');
+                this.container.scrollTop = this.container.scrollHeight;
+            }
+            
+            updateContainerHeight() {
+                const height = this.comments.length * this.itemHeight;
+                console.log('更新容器高度:', height, 'px，评论数量:', this.comments.length);
+                const placeholder = document.getElementById('commentsPlaceholder');
+                if (placeholder) {
+                    placeholder.style.height = `${height}px`;
+                    console.log('更新现有占位符高度');
+                } else {
+                    const newPlaceholder = document.createElement('div');
+                    newPlaceholder.id = 'commentsPlaceholder';
+                    newPlaceholder.style.height = `${height}px`;
+                    newPlaceholder.style.position = 'absolute';
+                    newPlaceholder.style.top = '0';
+                    newPlaceholder.style.left = '0';
+                    this.container.appendChild(newPlaceholder);
+                    console.log('创建新的占位符');
+                }
+            }
+            
+            handleScroll() {
+                const scrollTop = this.container.scrollTop;
+                this.startIndex = Math.max(0, Math.floor(scrollTop / this.itemHeight) - 2);
+                this.endIndex = Math.min(this.comments.length, Math.ceil((scrollTop + this.container.clientHeight) / this.itemHeight) + 2);
+                console.log('滚动事件，开始索引:', this.startIndex, '结束索引:', this.endIndex);
+                this.render();
+            }
+            
+            render() {
+                console.log('渲染评论，开始索引:', this.startIndex, '结束索引:', this.endIndex, '评论数量:', this.comments.length);
+                // 修复：当endIndex小于评论数量时，手动设置为评论数量，确保所有评论都能被渲染
+                if (this.endIndex < this.comments.length) {
+                    console.log('修复endIndex问题，设置为评论数量:', this.comments.length);
+                    this.endIndex = this.comments.length;
+                }
+                
+                // 移除不在可视区域内的评论
+                for (let [index, element] of this.renderedComments) {
+                    if (index < this.startIndex || index >= this.endIndex) {
+                        console.log('移除评论索引:', index);
+                        element.remove();
+                        this.renderedComments.delete(index);
+                    }
+                }
+                
+                // 渲染所有评论
+                for (let i = 0; i < this.comments.length; i++) {
+                    if (!this.renderedComments.has(i)) {
+                        const comment = this.comments[i];
+                        console.log('渲染评论索引:', i, '评论:', comment);
+                        const element = this.createCommentElement(comment);
+                        element.style.position = 'relative'; // 使用相对定位而不是绝对定位
+                        element.style.marginBottom = '10px'; // 添加间距
+                        this.container.appendChild(element);
+                        this.renderedComments.set(i, element);
+                        console.log('评论元素已添加到DOM');
+                    }
+                }
+                console.log('渲染完成，已渲染评论数量:', this.renderedComments.size);
+            }
+            
+            createCommentElement(comment) {
+                const element = document.createElement('div');
+                element.className = `comment-item ${comment.type}`;
+                // 确保评论元素有正确的样式和可见性
+                element.style.position = 'absolute';
+                element.style.width = '100%';
+                element.style.padding = '15px';
+                element.style.marginBottom = '10px';
+                element.style.borderRadius = '8px';
+                element.style.backgroundColor = comment.type === 'teacher' ? 'rgba(74, 0, 224, 0.3)' : 'rgba(30, 144, 255, 0.3)';
+                element.style.color = 'white';
+                element.style.zIndex = '1000';
+                element.innerHTML = `
+                    <div class="comment-author" style="font-weight: 600; font-size: 0.9rem; margin-bottom: 5px;">${comment.author}</div>
+                    <div class="comment-content" style="font-size: 0.95rem; line-height: 1.4;">${comment.content}</div>
+                    <div class="comment-time" style="font-size: 0.8rem; color: rgba(255, 255, 255, 0.6); margin-top: 5px;">${comment.time}</div>
+                `;
+                console.log('创建评论元素:', element);
+                return element;
+            }
+        }
+        
+        // 全局虚拟评论列表实例
+        let virtualCommentsList = null;
+
+        // 优化：PPT资源加载器
+        class PptResourceLoader {
+            constructor() {
+                this.cache = new Map();
+                this.preloadQueue = [];
+                this.isLoading = false;
+            }
+            
+            preload(url) {
+                if (this.cache.has(url)) return;
+                
+                this.preloadQueue.push(url);
+                if (!this.isLoading) {
+                    this.processQueue();
+                }
+            }
+            
+            async processQueue() {
+                if (this.preloadQueue.length === 0) {
+                    this.isLoading = false;
+                    return;
+                }
+                
+                this.isLoading = true;
+                const url = this.preloadQueue.shift();
+                
+                try {
+                    const response = await fetch(url, {
+                        method: 'HEAD',
+                        cache: 'force-cache'
+                    });
+                    this.cache.set(url, { timestamp: Date.now(), status: response.status });
+                    console.log(`Preloaded resource: ${url}`);
+                } catch (error) {
+                    console.error(`Failed to preload resource: ${url}`, error);
+                }
+                
+                this.processQueue();
+            }
+            
+            getCachedResource(url) {
+                return this.cache.get(url);
+            }
+        }
+
+        // 刷新金山文档
+        function refreshKdocs() {
+            const frame = document.querySelector('.kdocs-frame');
+            frame.src = frame.src;
+        }
+
+        // 全屏切换
+        function toggleFullscreen() {
+            const container = document.querySelector('.play-container');
+            
+            if (!document.fullscreenElement) {
+                if (container.requestFullscreen) {
+                    container.requestFullscreen();
+                } else if (container.webkitRequestFullscreen) {
+                    container.webkitRequestFullscreen();
+                } else if (container.msRequestFullscreen) {
+                    container.msRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            }
+        }
+
+        // 监听全屏变化
+        document.addEventListener('fullscreenchange', function() {
+            if (document.fullscreenElement) {
+                document.querySelector('.play-container').classList.add('fullscreen');
+            } else {
+                document.querySelector('.play-container').classList.remove('fullscreen');
+            }
+        });
+
+        // 监听webkit全屏变化
+        document.addEventListener('webkitfullscreenchange', function() {
+            if (document.webkitFullscreenElement) {
+                document.querySelector('.play-container').classList.add('fullscreen');
+            } else {
+                document.querySelector('.play-container').classList.remove('fullscreen');
+            }
+        });
+
+        // 监听ms全屏变化
+        document.addEventListener('msfullscreenchange', function() {
+            if (document.msFullscreenElement) {
+                document.querySelector('.play-container').classList.add('fullscreen');
+            } else {
+                document.querySelector('.play-container').classList.remove('fullscreen');
+            }
+        });
+
+        // 新窗口打开
+        function openInNewWindow() {
+            const kdocsUrl = "[[${kdocsUrl}]]";
+            window.open(kdocsUrl, '_blank', 'width=1200,height=800,scrollbars=yes');
+        }
+
+        // 切换学生所有消息状态
+        function toggleStudentAllMessages() {
+            isStudentAllMessagesDisabled = !isStudentAllMessagesDisabled;
+            const btn = document.getElementById('toggleAllMessagesBtn');
+            
+            if (isStudentAllMessagesDisabled) {
+                btn.className = 'control-btn bg-success';
+                btn.innerHTML = '<i class="fas fa-check"></i> 取消禁言';
+                addSystemComment('已禁言');
+            } else {
+                btn.className = 'control-btn';
+                btn.innerHTML = '<i class="fas fa-ban"></i> 禁言';
+                addSystemComment('已取消禁言');
+            }
+            
+            // 通过WebSocket通知学生
+            if (websocket && websocket.readyState === WebSocket.OPEN) {
+                sendWebSocketMessage('TOGGLE_STUDENT_ALL_MESSAGES', {
+                    disabled: isStudentAllMessagesDisabled
+                });
+                console.log('发送学生所有消息状态切换:', isStudentAllMessagesDisabled);
+            }
+        }
+
+        // 切换学生评论状态
+        function toggleStudentComments() {
+            isStudentCommentsDisabled = !isStudentCommentsDisabled;
+            const btn = document.createElement('button'); // 注意：这里需要在HTML中添加对应的按钮
+            
+            if (isStudentCommentsDisabled) {
+                addSystemComment('已禁止学生发送评论');
+            } else {
+                addSystemComment('已允许学生发送评论');
+            }
+            
+            // 通过WebSocket通知学生
+            if (websocket && websocket.readyState === WebSocket.OPEN) {
+                sendWebSocketMessage('TOGGLE_STUDENT_COMMENTS', {
+                    disabled: isStudentCommentsDisabled
+                });
+                console.log('发送学生评论状态切换:', isStudentCommentsDisabled);
+            }
+        }
+
+        // 添加系统评论
+        function addSystemComment(content) {
+            const comment = {
+                id: Date.now(),
+                author: '系统',
+                type: 'teacher',
+                content: content,
+                time: new Date().toLocaleTimeString()
+            };
+            addCommentToUI(comment);
+        }
+
+        // 清空评论
+        function clearComments() {
+            document.getElementById('commentsList').innerHTML = '';
+            comments = [];
+        }
+
+        // 切换评论面板显示/隐藏
+        function toggleComments() {
+            const commentsPanel = document.getElementById('commentsPanel');
+            const toggleBtn = commentsPanel.querySelector('.comments-toggle');
+            
+            commentsPanel.classList.toggle('hidden');
+            
+            if (commentsPanel.classList.contains('hidden')) {
+                toggleBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+            } else {
+                toggleBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            }
+        }
+
+        // 切换控制面板显示/隐藏
+        function toggleControlPanel() {
+            const controlPanel = document.getElementById('controlPanel');
+            const toggleBtn = controlPanel.querySelector('.control-toggle');
+            
+            controlPanel.classList.toggle('hidden');
+            
+            if (controlPanel.classList.contains('hidden')) {
+                toggleBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+            } else {
+                toggleBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            }
+        }
+
+        // 键盘事件
+        document.getElementById('commentInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendComment();
+            }
+        });
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化PPT资源加载器
+            pptResourceLoader = new PptResourceLoader();
+            
+            // 初始化虚拟评论列表
+            const commentsListElement = document.getElementById('commentsList');
+            if (commentsListElement) {
+                virtualCommentsList = new VirtualCommentsList(commentsListElement);
+                console.log('虚拟评论列表初始化完成');
+            }
+            
+            initWebSocket();
+        });
+    </script>
+</body>
+</html>

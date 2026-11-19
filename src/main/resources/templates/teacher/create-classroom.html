@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>创建课堂 - 课堂弹幕系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/cyberpunk-2077.css">
+</head>
+<body class="cyber-body">
+<div class="cyber-card cyber-glow-green">
+    <!-- 头部 -->
+    <div class="cyber-card-header cyber-gradient-green">
+        <h1 class="cyber-title">
+            <i class="fas fa-plus-circle cyber-text-green"></i>
+            创建新课堂
+        </h1>
+        <p class="cyber-text-subtitle">设置课堂信息，开始互动教学</p>
+    </div>
+
+    <!-- 表单区域 -->
+    <div class="cyber-card-content">
+        <form id="createClassroomForm" th:action="@{/teacher/create-classroom}" method="post">
+            <input type="hidden" name="teacherId" th:value="${teacherId}">
+            <input type="hidden" id="videoTreeJson" name="videoTreeJson">
+
+            <div class="cyber-form-group">
+                <label for="className" class="cyber-form-label">
+                    <i class="fas fa-chalkboard cyber-text-green"></i> 课堂名称
+                </label>
+                <input type="text"
+                       id="className"
+                       name="name"
+                       class="cyber-input cyber-input-green"
+                       placeholder="例如：高等数学第一节 - 极限与连续"
+                       required
+                       maxlength="50">
+                <div class="cyber-form-help">
+                    <i class="fas fa-info-circle cyber-text-green"></i>
+                    请输入清晰易懂的课堂名称，方便学生识别
+                </div>
+            </div>
+
+            <div class="cyber-form-group">
+                <label for="classDescription" class="cyber-form-label">
+                    <i class="fas fa-align-left cyber-text-green"></i> 课堂描述（可选）
+                </label>
+                <textarea id="classDescription"
+                          name="description"
+                          class="cyber-input cyber-input-green cyber-textarea"
+                          placeholder="描述本节课的主要内容、目标和注意事项..."
+                          maxlength="200"></textarea>
+                <div class="cyber-form-help">
+                    <i class="fas fa-info-circle cyber-text-green"></i>
+                    简要描述课堂内容，帮助学生了解本节课的重点
+                </div>
+            </div>
+
+            <div class="cyber-form-group">
+                <label class="cyber-form-label">
+                    <i class="fas fa-sitemap cyber-text-green"></i> 选择视频树
+                </label>
+
+                <!-- 选项卡按钮 -->
+                <div class="cyber-tabs">
+                    <button type="button" class="cyber-tab-button active" onclick="switchTab('existing')">
+                        <i class="fas fa-database cyber-text-green"></i> 使用已有视频树
+                    </button>
+                    <button type="button" class="cyber-tab-button" onclick="switchTab('upload')">
+                        <i class="fas fa-upload cyber-text-green"></i> 上传JSON或数据包
+                    </button>
+                    <button type="button" class="cyber-tab-button" onclick="switchTab('create')">
+                        <i class="fas fa-plus cyber-text-green"></i> 创建新视频树
+                    </button>
+                </div>
+
+                <!-- 已有视频树选项卡 -->
+                <div id="existing-tab" class="cyber-tab-content active">
+                    <div class="cyber-select-wrapper">
+                        <select id="videoTreeSelect"
+                                name="videoTreeId"
+                                class="cyber-input cyber-input-green"
+                                onchange="showVideoTreeInfo(this.value)">
+                            <option value="">-- 请选择视频树 --</option>
+                            <option th:each="tree : ${videoTrees}"
+                                    th:value="${tree.id}"
+                                    th:text="${tree.name}"
+                                    th:attr="data-description=${tree.description}, data-nodes=${tree.nodeCount}, data-edges=${tree.leafCount}">
+                                视频树名称
+                            </option>
+                        </select>
+                        <i class="fas fa-chevron-down cyber-text-green"></i>
+                    </div>
+
+                    <!-- 视频树信息卡片 -->
+                    <div id="videoTreeInfo" class="cyber-card cyber-card-secondary cyber-glow-green" style="margin-top: 10px;">
+                        <div class="cyber-card-content">
+                            <h4 id="treeName" class="cyber-title cyber-title-sm cyber-text-green">视频树名称</h4>
+                            <p id="treeDescription" class="cyber-text">视频树描述...</p>
+                            <div class="cyber-stats">
+                                <span class="cyber-stat-item"><i class="fas fa-video cyber-text-green"></i> <span id="treeNodes">0</span>个节点</span>
+                                <span class="cyber-stat-item"><i class="fas fa-link cyber-text-green"></i> <span id="treeEdges">0</span>个连接</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 上传JSON选项卡 -->
+                <div id="upload-tab" class="cyber-tab-content">
+                    <div class="cyber-file-upload" id="dropArea">
+                        <div class="cyber-file-upload-icon">
+                            <i class="fas fa-file-upload cyber-text-green"></i>
+                        </div>
+                        <div class="cyber-file-upload-text">
+                            <h4 class="cyber-title cyber-title-sm">上传视频树JSON文件或授课数据包</h4>
+                            <p class="cyber-text">拖拽文件到此处，或点击选择文件<br>
+                                支持 .json 视频树（最大 5MB）与 .zip 授课数据包</p>
+                            <button type="button" class="cyber-btn cyber-btn-primary cyber-btn-green" onclick="document.getElementById('jsonFileInput').click()">
+                                <i class="fas fa-folder-open"></i> 选择文件
+                            </button>
+                        </div>
+                        <input type="file" id="jsonFileInput" class="cyber-file-input" accept=".json,.zip" onchange="handleFileSelect(event)">
+                    </div>
+
+                    <!-- 已上传文件信息 -->
+                    <div id="uploadedFileInfo" class="cyber-card cyber-card-secondary cyber-glow-green" style="margin-top: 15px;">
+                        <div class="cyber-card-content">
+                            <div class="cyber-file-info">
+                                <div class="cyber-file-icon">
+                                    <i class="fas fa-file-code cyber-text-green"></i>
+                                </div>
+                                <div class="cyber-file-details">
+                                    <h5 id="fileName" class="cyber-title cyber-title-sm">未选择文件</h5>
+                                    <p id="fileSize" class="cyber-text cyber-text-sm">0 KB</p>
+                                </div>
+                                <button type="button" class="cyber-btn cyber-btn-small cyber-btn-danger" onclick="removeUploadedFile()">
+                                    <i class="fas fa-times"></i> 移除
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- JSON预览 -->
+                    <div id="jsonPreviewContainer" class="cyber-card cyber-card-secondary" style="margin-top: 15px;">
+                        <div class="cyber-card-header">
+                            <div class="cyber-card-header-content">
+                                <h5 class="cyber-title cyber-title-sm">JSON预览</h5>
+                                <button type="button" class="cyber-btn cyber-btn-small cyber-btn-outline cyber-btn-green" onclick="toggleJsonPreview()">
+                                    <i class="fas fa-expand-alt"></i> 展开
+                                </button>
+                            </div>
+                        </div>
+                        <div class="cyber-card-content">
+                            <div class="cyber-code-block" id="jsonPreview">
+                                选择JSON文件后将显示预览...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 创建新视频树选项卡 -->
+                <div id="create-tab" class="cyber-tab-content">
+                    <div class="cyber-center-content">
+                        <div class="cyber-icon-large cyber-text-green">
+                            <i class="fas fa-sitemap"></i>
+                        </div>
+                        <h4 class="cyber-title cyber-title-sm">创建新视频树</h4>
+                        <p class="cyber-text">
+                            您需要先创建一个视频树，然后才能使用它创建课堂
+                        </p>
+                        <a th:href="@{/video-tree/editor(teacherId=${teacherId})}" class="cyber-btn cyber-btn-primary cyber-btn-green" style="text-decoration: none;">
+                            <i class="fas fa-external-link-alt"></i> 打开视频树编辑器
+                        </a>
+                    </div>
+                </div>
+
+                <div class="cyber-form-help">
+                    <i class="fas fa-info-circle cyber-text-green"></i>
+                    视频树定义了课堂的视频播放路径和跳转逻辑
+                </div>
+            </div>
+
+            <div class="cyber-form-group">
+                <label class="cyber-form-label">
+                    <i class="fas fa-sliders-h cyber-text-green"></i> 课堂设置
+                </label>
+                <div class="cyber-grid cyber-grid-2">
+                    <div class="cyber-card cyber-card-secondary cyber-glow-green">
+                        <div class="cyber-card-content">
+                            <label class="cyber-checkbox-label">
+                                <input type="checkbox" name="enableDanmaku" checked> 启用弹幕
+                            </label>
+                            <p class="cyber-text cyber-text-sm">允许学生发送弹幕</p>
+                        </div>
+                    </div>
+
+                    <div class="cyber-card cyber-card-secondary cyber-glow-green">
+                        <div class="cyber-card-content">
+                            <label class="cyber-checkbox-label">
+                                <input type="checkbox" name="enableComments" checked> 启用讨论区
+                            </label>
+                            <p class="cyber-text cyber-text-sm">允许学生讨论问题</p>
+                        </div>
+                    </div>
+
+                    <div class="cyber-card cyber-card-secondary cyber-glow-green">
+                        <div class="cyber-card-content">
+                            <label class="cyber-checkbox-label">
+                                <input type="checkbox" name="autoJump" checked> 智能跳转
+                            </label>
+                            <p class="cyber-text cyber-text-sm">根据弹幕自动跳转视频</p>
+                        </div>
+                    </div>
+
+                    <div class="cyber-card cyber-card-secondary cyber-glow-green">
+                        <div class="cyber-card-content">
+                            <label class="cyber-checkbox-label">
+                                <input type="checkbox" name="recordSession" checked> 录制课堂
+                            </label>
+                            <p class="cyber-text cyber-text-sm">保存课堂回放</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cyber-btn-group">
+                <button type="submit" class="cyber-btn cyber-btn-primary cyber-btn-green">
+                    <i class="fas fa-check"></i> 创建课堂
+                </button>
+                <a th:href="@{/teacher/dashboard(teacherId=${teacherId})}" class="cyber-btn cyber-btn-outline cyber-btn-green">
+                    <i class="fas fa-times"></i> 取消
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="/js/ui-common.js"></script>
+<script>
+    // 当前选中的选项卡
+    let currentTab = 'existing';
+    let uploadedFile = null;
+    let jsonData = null;
+
+    // 切换选项卡
+    function switchTab(tabName) {
+        currentTab = tabName;
+
+        // 更新选项卡按钮状态
+        document.querySelectorAll('.cyber-tab-button').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+
+        // 更新选项卡内容
+        document.querySelectorAll('.cyber-tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(`${tabName}-tab`).classList.add('active');
+
+        // 根据选项卡显示/隐藏视频树信息
+        if (tabName === 'existing') {
+            const select = document.getElementById('videoTreeSelect');
+            if (select.value) {
+                showVideoTreeInfo(select.value);
+            }
+        } else {
+            document.getElementById('videoTreeInfo').classList.remove('active');
+        }
+
+        // 如果是上传选项卡，设置拖放事件
+        if (tabName === 'upload') {
+            setupDragAndDrop();
+        }
+    }
+
+    // 显示选中的视频树信息
+    function showVideoTreeInfo(treeId) {
+        const select = document.getElementById('videoTreeSelect');
+        const selectedOption = select.options[select.selectedIndex];
+        const infoCard = document.getElementById('videoTreeInfo');
+
+        if (treeId && selectedOption) {
+            const description = selectedOption.getAttribute('data-description') || '暂无描述';
+            const nodes = selectedOption.getAttribute('data-nodes') || '0';
+            const edges = selectedOption.getAttribute('data-edges') || '0';
+
+            document.getElementById('treeName').textContent = selectedOption.text;
+            document.getElementById('treeDescription').textContent = description;
+            document.getElementById('treeNodes').textContent = nodes;
+            document.getElementById('treeEdges').textContent = edges;
+
+            infoCard.style.display = 'block';
+        } else {
+            infoCard.style.display = 'none';
+        }
+    }
+
+    // 设置拖放功能
+    function setupDragAndDrop() {
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('jsonFileInput');
+
+        // 阻止默认拖放行为
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        // 高亮拖放区域
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        // 处理文件拖放
+        dropArea.addEventListener('drop', handleDrop, false);
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function highlight() {
+            dropArea.classList.add('cyber-file-upload-drag-over');
+        }
+
+        function unhighlight() {
+            dropArea.classList.remove('cyber-file-upload-drag-over');
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+
+            if (files.length > 0) {
+                handleFiles(files);
+            }
+        }
+    }
+
+    // 处理文件选择
+    function handleFileSelect(event) {
+        const files = event.target.files;
+        if (files.length > 0) {
+            handleFiles(files);
+        }
+    }
+
+    // 处理文件
+    function handleFiles(files) {
+        const file = files[0];
+        const lowerName = file.name.toLowerCase();
+
+        // 授课数据包：直接导入工作区，导入成功后回到「已有视频树」
+        if (lowerName.endsWith('.zip')) {
+            importWorkspaceZip(file);
+            return;
+        }
+
+        // 检查文件类型
+        if (!lowerName.endsWith('.json')) {
+            showNotification('请选择 .json 视频树文件或 .zip 授课数据包', 'error');
+            return;
+        }
+
+        // 检查文件大小 (5MB限制)
+        if (file.size > 5 * 1024 * 1024) {
+            showNotification('文件大小不能超过5MB', 'error');
+            return;
+        }
+
+        uploadedFile = file;
+
+        // 显示文件信息
+        const fileInfo = document.getElementById('uploadedFileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+
+        fileName.textContent = file.name;
+        fileSize.textContent = formatFileSize(file.size);
+        fileInfo.style.display = 'block';
+
+        // 读取并解析JSON文件
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                jsonData = JSON.parse(e.target.result);
+
+                // 清理JSON数据
+                jsonData = cleanVideoTreeJson(jsonData);
+
+                displayJsonPreview(jsonData);
+                showNotification('JSON文件解析成功', 'success');
+            } catch (error) {
+                showNotification('JSON文件格式错误: ' + error.message, 'error');
+                removeUploadedFile();
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    // 导入授课数据包（.zip）：恢复视频与视频树，然后刷新下拉列表
+    function importWorkspaceZip(file) {
+        if (!confirm(`检测到数据包「${file.name}」。\n\n导入会用压缩包中的视频与视频树替换当前工作区数据，是否继续？`)) {
+            document.getElementById('jsonFileInput').value = '';
+            return;
+        }
+
+        showNotification('正在导入数据包，请稍候...', 'warning');
+        const formData = new FormData();
+        formData.append('file', file);
+
+        fetch('/api/workspace/import', { method: 'POST', body: formData })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('jsonFileInput').value = '';
+                if (!data || !data.success) {
+                    showNotification('导入失败：' + ((data && data.message) || '未知错误'), 'error');
+                    return;
+                }
+                showNotification(`导入成功：${data.videoCount || 0} 个视频，${data.treeCount || 0} 棵视频树`, 'success');
+                refreshVideoTrees(true);
+            })
+            .catch(error => {
+                document.getElementById('jsonFileInput').value = '';
+                showNotification('导入失败：' + error.message, 'error');
+            });
+    }
+
+    // 重新拉取视频树列表；autoSelectFirst 用于导入后自动选中最新的一棵
+    function refreshVideoTrees(autoSelectFirst) {
+        const teacherId = document.querySelector('input[name="teacherId"]').value;
+        const select = document.getElementById('videoTreeSelect');
+
+        fetch(`/video-tree/teacher/${encodeURIComponent(teacherId)}`)
+            .then(response => response.json())
+            .then(trees => {
+                const previous = select.value;
+                select.innerHTML = '<option value="">-- 请选择视频树 --</option>';
+                (trees || []).forEach(tree => {
+                    const option = document.createElement('option');
+                    option.value = tree.id;
+                    option.textContent = tree.name;
+                    option.setAttribute('data-description', tree.description || '');
+                    option.setAttribute('data-nodes', tree.nodeCount || 0);
+                    option.setAttribute('data-edges', tree.leafCount || 0);
+                    select.appendChild(option);
+                });
+
+                if (autoSelectFirst && trees && trees.length > 0) {
+                    select.value = trees[0].id;
+                } else if (previous) {
+                    select.value = previous;
+                }
+
+                switchTab('existing');
+                if (select.value) {
+                    showVideoTreeInfo(select.value);
+                }
+            })
+            .catch(error => {
+                showNotification('刷新视频树列表失败：' + error.message, 'error');
+            });
+    }
+
+    // 移除已上传的文件
+    function removeUploadedFile() {
+        uploadedFile = null;
+        jsonData = null;
+
+        document.getElementById('uploadedFileInfo').style.display = 'none';
+        document.getElementById('jsonFileInput').value = '';
+        document.getElementById('jsonPreview').textContent = '选择JSON文件后将显示预览...';
+        document.getElementById('jsonPreviewContainer').style.maxHeight = '300px';
+
+        // 移除提示
+        const existingHint = document.querySelector('.json-upload-hint');
+        if (existingHint) {
+            existingHint.remove();
+        }
+    }
+
+    // 格式化文件大小
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // 显示JSON预览
+    function displayJsonPreview(data) {
+        const jsonPreview = document.getElementById('jsonPreview');
+
+        try {
+            // 格式化JSON
+            const formattedJson = JSON.stringify(data, null, 2);
+
+            // 分析视频树信息
+            const totalNodes = data.elements ? data.elements.length : 0;
+            const totalConnections = data.links ? data.links.length : 0;
+
+            // 统计有文件名的节点数
+            const nodesWithFiles = data.elements ?
+                data.elements.filter(el => el.fileName && el.fileName.trim()).length : 0;
+
+            // 统计有视频URL的节点数
+            const nodesWithVideoUrl = data.elements ?
+                data.elements.filter(el => el.videoUrl && el.videoUrl.trim()).length : 0;
+
+            // 找到根节点
+            const rootNode = data.elements ?
+                data.elements.find(element => {
+                    const hasIncomingLink = data.links && data.links.some(link =>
+                        link.target && link.target.id === element.id
+                    );
+                    return !hasIncomingLink;
+                }) : null;
+
+            let previewText = formattedJson;
+
+            if (previewText.length > 500) {
+                previewText = previewText.substring(0, 500) + '...';
+            }
+
+            // 添加统计信息
+            const statsInfo = `
+====================================
+视频树统计信息:
+- 总节点数: ${totalNodes}
+- 总连接数: ${totalConnections}
+- 有文件名的节点: ${nodesWithFiles}
+- 有视频URL的节点: ${nodesWithVideoUrl}
+- 根节点: ${rootNode ? rootNode.name : '未找到'}
+====================================
+
+${previewText}`;
+
+            jsonPreview.textContent = statsInfo;
+
+            // 显示提示信息（关于视频文件）
+            showJsonUploadHint(nodesWithFiles, nodesWithVideoUrl);
+
+        } catch (error) {
+            jsonPreview.textContent = '无法格式化JSON数据: ' + error.message;
+        }
+    }
+
+    // 显示JSON上传提示
+    function showJsonUploadHint(nodesWithFiles, nodesWithVideoUrl) {
+        // 移除已有的提示
+        const existingHint = document.querySelector('.json-upload-hint');
+        if (existingHint) {
+            existingHint.remove();
+        }
+
+        let hintMessage = '';
+        let iconClass = '';
+        let background = '';
+        let borderColor = '';
+
+        if (nodesWithFiles === 0) {
+            hintMessage = '⚠️ 这个视频树没有指定视频文件名。创建课堂后，您需要在课堂控制台中为每个节点手动选择视频文件。';
+            iconClass = 'fa-exclamation-triangle';
+            background = '#fff3cd';
+            borderColor = '#ffc107';
+        } else if (nodesWithVideoUrl === 0) {
+            hintMessage = `📋 这个视频树包含 ${nodesWithFiles} 个节点的文件名但没有视频URL。创建课堂后，系统会提示您上传对应的视频文件。`;
+            iconClass = 'fa-info-circle';
+            background = '#d1ecf1';
+            borderColor = '#17a2b8';
+        } else {
+            hintMessage = `✅ 这个视频树包含 ${nodesWithVideoUrl} 个节点的视频文件信息。创建课堂后可以立即开始使用。`;
+            iconClass = 'fa-check-circle';
+            background = '#d4edda';
+            borderColor = '#28a745';
+        }
+
+        const hintDiv = document.createElement('div');
+        hintDiv.className = 'hint json-upload-hint';
+        hintDiv.style.marginTop = '10px';
+        hintDiv.style.padding = '10px';
+        hintDiv.style.background = background;
+        hintDiv.style.borderLeft = `4px solid ${borderColor}`;
+        hintDiv.innerHTML = `
+            <i class="fas ${iconClass}"></i>
+            <div style="flex: 1;">${hintMessage}</div>
+        `;
+
+        const jsonPreviewContainer = document.getElementById('jsonPreviewContainer');
+        jsonPreviewContainer.parentNode.insertBefore(hintDiv, jsonPreviewContainer.nextSibling);
+    }
+
+    // 清理视频树JSON数据
+    function cleanVideoTreeJson(jsonData) {
+        if (!jsonData) return jsonData;
+
+        // 创建深拷贝
+        const cleanedData = JSON.parse(JSON.stringify(jsonData));
+
+        // 清理elements
+        if (cleanedData.elements && Array.isArray(cleanedData.elements)) {
+            cleanedData.elements.forEach(element => {
+                // 移除Blob URL和无效的本地文件URL
+                if (element.videoUrl) {
+                    if (element.videoUrl.startsWith('blob:') ||
+                        element.videoUrl.startsWith('file://') ||
+                        element.videoUrl.includes('localhost') ||
+                        !element.videoUrl.startsWith('http')) {
+                        element.videoUrl = '';
+                    }
+                }
+
+                // 确保fileName存在（如果没有，尝试从videoUrl中提取）
+                if (!element.fileName && element.videoUrl) {
+                    const urlParts = element.videoUrl.split('/');
+                    element.fileName = urlParts[urlParts.length - 1];
+                }
+
+                // 清理其他可能的问题
+                if (element.attrs && element.attrs.label && element.attrs.label.text) {
+                    // 如果节点名称与name字段不一致，统一使用name字段
+                    if (element.name && element.attrs.label.text !== element.name) {
+                        element.attrs.label.text = element.name;
+                    }
+                }
+            });
+        }
+
+        // 清理links
+        if (cleanedData.links && Array.isArray(cleanedData.links)) {
+            cleanedData.links.forEach(link => {
+                // 确保source和target格式正确
+                if (link.source && typeof link.source === 'string') {
+                    link.source = { id: link.source, port: 'bottom' };
+                }
+                if (link.target && typeof link.target === 'string') {
+                    link.target = { id: link.target, port: 'top' };
+                }
+
+                // 清理标签
+                if (!link.label) {
+                    link.label = '相关视频';
+                }
+            });
+        }
+
+        // 添加版本信息
+        cleanedData.version = '2.0';
+        cleanedData.cleanedAt = new Date().toISOString();
+
+        return cleanedData;
+    }
+
+    // 验证JSON数据结构
+    function validateJsonStructure(data) {
+        if (!data) return false;
+
+        // 检查基本结构
+        if (!data.elements || !Array.isArray(data.elements)) {
+            return false;
+        }
+
+        // 检查每个元素是否有必要字段
+        for (const element of data.elements) {
+            if (!element.id || !element.name) {
+                return false;
+            }
+            // 注意：现在不要求videoUrl，但要求fileName（可以为空）
+            // 如果有videoUrl但不是http或https，忽略它
+            if (element.videoUrl && !element.videoUrl.startsWith('http')) {
+                element.videoUrl = ''; // 清除非HTTP URL
+            }
+        }
+
+        // 检查是否有根节点
+        const hasRoot = data.elements.some(element => {
+            const hasIncomingLink = data.links && data.links.some(link =>
+                link.target && link.target.id === element.id
+            );
+            return !hasIncomingLink;
+        });
+
+        if (!hasRoot) {
+            console.warn('找不到视频树的根节点');
+        }
+
+        return true;
+    }
+
+    // 切换JSON预览展开/折叠
+    function toggleJsonPreview() {
+        const container = document.getElementById('jsonPreviewContainer');
+        const toggleBtn = document.querySelector('.cyber-btn-outline.cyber-btn-green');
+        const jsonPreview = document.getElementById('jsonPreview');
+
+        if (container.style.maxHeight === 'none') {
+            container.style.maxHeight = '300px';
+            toggleBtn.innerHTML = '<i class="fas fa-expand-alt"></i> 展开';
+
+            // 如果是完整JSON，截取前500字符
+            if (jsonData && JSON.stringify(jsonData, null, 2).length > 500) {
+                const statsInfo = getStatsInfo(jsonData);
+                const previewText = JSON.stringify(jsonData, null, 2).substring(0, 500) + '...';
+                jsonPreview.textContent = statsInfo + '\n\n' + previewText;
+            }
+        } else {
+            container.style.maxHeight = 'none';
+            toggleBtn.innerHTML = '<i class="fas fa-compress-alt"></i> 折叠';
+
+            // 显示完整JSON
+            if (jsonData) {
+                const statsInfo = getStatsInfo(jsonData);
+                const previewText = JSON.stringify(jsonData, null, 2);
+                jsonPreview.textContent = statsInfo + '\n\n' + previewText;
+            }
+        }
+    }
+
+    // 获取统计信息
+    function getStatsInfo(data) {
+        const totalNodes = data.elements ? data.elements.length : 0;
+        const totalConnections = data.links ? data.links.length : 0;
+        const nodesWithFiles = data.elements ?
+            data.elements.filter(el => el.fileName && el.fileName.trim()).length : 0;
+        const nodesWithVideoUrl = data.elements ?
+            data.elements.filter(el => el.videoUrl && el.videoUrl.trim()).length : 0;
+        const rootNode = data.elements ?
+            data.elements.find(element => {
+                const hasIncomingLink = data.links && data.links.some(link =>
+                    link.target && link.target.id === element.id
+                );
+                return !hasIncomingLink;
+            }) : null;
+
+        return `====================================
+视频树统计信息:
+- 总节点数: ${totalNodes}
+- 总连接数: ${totalConnections}
+- 有文件名的节点: ${nodesWithFiles}
+- 有视频URL的节点: ${nodesWithVideoUrl}
+- 根节点: ${rootNode ? rootNode.name : '未找到'}
+====================================`;
+    }
+
+    // 表单提交处理
+    document.getElementById('createClassroomForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const className = document.getElementById('className').value.trim();
+        const videoTreeId = document.getElementById('videoTreeSelect').value;
+
+        if (!className) {
+            showNotification('请输入课堂名称', 'error');
+            return;
+        }
+
+        // 根据当前选项卡处理视频树
+        if (currentTab === 'existing') {
+            // 使用已有视频树
+            if (!videoTreeId) {
+                showNotification('请选择视频树', 'error');
+                return;
+            }
+
+            // 提交表单
+            submitForm();
+
+        } else if (currentTab === 'upload') {
+            // 上传JSON文件
+            if (!uploadedFile || !jsonData) {
+                showNotification('请上传JSON文件', 'error');
+                return;
+            }
+
+            // 验证JSON结构
+            if (!validateJsonStructure(jsonData)) {
+                showNotification('JSON文件结构不符合要求', 'error');
+                return;
+            }
+
+            // 清理JSON数据（移除所有Blob URL）
+            if (jsonData.elements) {
+                jsonData.elements.forEach(element => {
+                    // 如果是Blob URL或非HTTP URL，清空它
+                    if (element.videoUrl &&
+                        (element.videoUrl.startsWith('blob:') ||
+                            !element.videoUrl.startsWith('http'))) {
+                        element.videoUrl = '';
+                    }
+                });
+            }
+
+            // 将清理后的JSON数据存入隐藏字段
+            document.getElementById('videoTreeJson').value = JSON.stringify(jsonData);
+
+            // 显示警告信息（如果视频树缺少视频文件）
+            const nodesWithFiles = jsonData.elements ?
+                jsonData.elements.filter(el => el.fileName && el.fileName.trim()).length : 0;
+
+            if (nodesWithFiles === 0) {
+                if (!confirm('⚠️ 这个视频树没有指定视频文件名。创建课堂后，您需要为每个节点手动选择视频文件。\n\n是否继续创建课堂？')) {
+                    return;
+                }
+            } else {
+                if (!confirm(`视频树包含 ${nodesWithFiles} 个节点的文件名。创建课堂后，系统会提示您上传对应的视频文件。\n\n是否继续创建课堂？`)) {
+                    return;
+                }
+            }
+
+            // 提交表单
+            submitForm();
+
+        } else if (currentTab === 'create') {
+            showNotification('请先创建视频树或使用已有视频树', 'warning');
+            return;
+        }
+    });
+
+    // 提交表单（使用fetch发送JSON）
+    function submitForm() {
+        // 显示加载状态
+        const submitBtn = document.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 创建中...';
+        submitBtn.disabled = true;
+
+        const teacherId = document.querySelector('input[name="teacherId"]').value;
+        const className = document.getElementById('className').value.trim();
+        const classDescription = document.getElementById('classDescription').value.trim();
+        const videoTreeId = document.getElementById('videoTreeSelect').value;
+
+        const requestData = {
+            teacherId: teacherId,
+            name: className,
+            description: classDescription,
+            videoTreeId: currentTab === 'existing' ? videoTreeId : null,
+            videoTreeJson: currentTab === 'upload' ? document.getElementById('videoTreeJson').value : null,
+            enableDanmaku: document.querySelector('input[name="enableDanmaku"]').checked,
+            enableComments: document.querySelector('input[name="enableComments"]').checked,
+            autoJump: document.querySelector('input[name="autoJump"]').checked,
+            recordSession: document.querySelector('input[name="recordSession"]').checked
+        };
+
+        fetch('/teacher/create-classroom', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+
+            if (data.success) {
+                showNotification(data.message || '课堂创建成功！', 'success');
+                setTimeout(() => {
+                    window.location.href = data.redirectUrl || '/teacher/dashboard?teacherId=' + teacherId;
+                }, 1000);
+            } else {
+                showNotification('创建失败: ' + (data.message || '未知错误'), 'error');
+            }
+        })
+        .catch(error => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+            showNotification('请求失败: ' + error.message, 'error');
+        });
+    }
+
+    // 显示通知
+    function showNotification(message, type) {
+        UiCommon.cyberNotify(message, type);
+    }
+
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        // 检查是否有选中的视频树，显示其信息
+        const select = document.getElementById('videoTreeSelect');
+        if (select.value) {
+            showVideoTreeInfo(select.value);
+        }
+
+        // 设置上传选项卡的拖放功能
+        setupDragAndDrop();
+
+        // 检查是否有闪存消息（成功/错误消息）
+        const successMessage = /*[[${success}]]*/ null;
+        const errorMessage = /*[[${error}]]*/ null;
+
+        if (successMessage) {
+            showNotification(successMessage, 'success');
+        }
+        if (errorMessage) {
+            showNotification(errorMessage, 'error');
+        }
+    });
+</script>
+</body>
+</html>

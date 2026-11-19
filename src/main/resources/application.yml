@@ -1,0 +1,142 @@
+server:
+  port: 8080
+#  address: 0.0.0.0
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: classroom-system
+
+  # Thymeleaf 配置
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    cache: false  # 开发环境关闭缓存
+
+  # 静态资源
+  mvc:
+    static-path-pattern: /**
+  web:
+    resources:
+      static-locations: classpath:/static/
+
+  # 文件上传配置
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 200MB
+
+  # WebSocket 配置
+  websocket:
+    allowed-origins: "*"
+    message-size-limit: 2097152 # 2MB 消息大小限制
+    buffer-size-limit: 2097152 # 2MB 缓冲区大小限制
+
+  # 开发工具
+  devtools:
+    livereload:
+      enabled: true
+    restart:
+      enabled: true
+
+# 日志配置
+logging:
+  level:
+    com.example: DEBUG
+    org.springframework.web.socket: DEBUG
+    org.springframework.web.socket.handler: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/classroom-system.log
+
+# WebSocket配置（WebSocketConfig.java使用）
+websocket:
+  allowed-origins: "*"
+
+# 教室系统配置
+classroom:
+  # 服务器地址配置
+
+  auto-detect-server-url: true
+
+  # 上传目录
+  upload-dir: ./classroom-uploads
+
+  # 文件上传配置
+  file:
+    max-size: 100MB
+    allowed-extensions: .ppt,.pptx,.pdf,.doc,.docx,.xls,.xlsx
+
+  # Office文件在线预览配置
+  office-viewer:
+    enabled: true
+    base-url: https://view.officeapps.live.com/op/embed.aspx
+    # 备选 WPS 在线预览
+    # base-url: https://www.kdocs.cn/office/op/view
+    timeout: 30000
+    retry-count: 3
+
+  # WebSocket 配置
+  websocket:
+    endpoint: /ws
+    allowed-origins: "*"
+    heartbeat-interval: 30000
+    max-message-size: 8192
+    buffer-size: 8192
+
+  # 访问令牌配置（用于文件访问）
+  token:
+    enabled: true
+    expire-minutes: 120
+    length: 16
+
+  # 文件清理配置
+  cleanup:
+    enabled: true
+    keep-hours: 72  # 教室系统文件可能需要保留更长时间
+
+# 视频系统配置
+video:
+  # 工作区目录（视频、临时文件与视频树 JSON 统一存放，重启不清空）
+  workspace:
+    dir: ./workspace
+  # 视频上传路径
+  upload:
+    path: ./workspace/videos
+  # 临时视频路径
+  temporary:
+    path: ./workspace/temp
+  # 视频文件配置
+  file:
+    max-size: 1GB
+    allowed-extensions: .mp4,.avi,.mov,.wmv,.flv,.mkv
+  # 临时文件配置
+  temp:
+    expire-hours: 24
+    cleanup-interval: 60  # 清理间隔（分钟）
+
+# JSON文件配置
+json:
+  # JSON上传路径
+  upload:
+    path: ./json-uploads
+  # JSON文件配置
+  file:
+    max-size: 5MB
+    allowed-extensions: .json
+  # JSON文件存储配置
+  storage:
+    # 是否使用独立目录存储JSON文件
+    enabled: true
+    # 存储目录路径
+    directory: ./json-storage
+    # 是否在启动时清理过期文件
+    cleanup-enabled: false
+
+
+

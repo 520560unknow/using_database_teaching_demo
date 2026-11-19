@@ -1,0 +1,2739 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教师课堂 - 课堂互动系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js"></script>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 255, 255, 0.05),
+                rgba(0, 255, 255, 0.05) 1px,
+                transparent 1px,
+                transparent 20px
+            );
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                90deg,
+                rgba(255, 0, 255, 0.05),
+                rgba(255, 0, 255, 0.05) 1px,
+                transparent 1px,
+                transparent 20px
+            );
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .container h2, .container h4, .container h5 {
+            color: #00ffff;
+            text-shadow: 0 0 3px rgba(0, 255, 255, 0.5);
+            font-family: 'Courier New', monospace;
+        }
+
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            height: 675px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+
+        .video-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.05) 50%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .video-element {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .barrage-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .barrage-input-area {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(10, 10, 20, 0.8);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 2px;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+        }
+
+        .barrage-input-area h4 {
+            color: #00ffff;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+        }
+
+        .barrage-controls {
+            margin-top: 10px;
+        }
+
+        .form-control {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 255, 255, 0.5);
+            border-radius: 2px;
+            color: #00ffff;
+            font-family: 'Courier New', monospace;
+        }
+
+        .form-control:focus {
+            border-color: #00ffff;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .form-select {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 255, 255, 0.5);
+            border-radius: 2px;
+            color: #00ffff;
+            font-family: 'Courier New', monospace;
+        }
+
+        .form-select:focus {
+            border-color: #00ffff;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .btn {
+            border-radius: 2px;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: rgba(0, 255, 255, 0.2);
+            border: 1px solid #00ffff;
+            color: #00ffff;
+            box-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+        }
+
+        .btn-primary:hover {
+            background: rgba(0, 255, 255, 0.3);
+            border-color: #00ffff;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+        }
+
+        .btn-secondary {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 255, 255, 0.5);
+            color: #00ffff;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 255, 255, 0.2);
+            border-color: #00ffff;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .btn-warning {
+            background: rgba(255, 255, 0, 0.2);
+            border: 1px solid #ffff00;
+            color: #ffff00;
+            box-shadow: 0 0 5px rgba(255, 255, 0, 0.5);
+        }
+
+        .btn-warning:hover {
+            background: rgba(255, 255, 0, 0.3);
+            border-color: #ffff00;
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.8);
+        }
+
+        .btn-danger {
+            background: rgba(255, 0, 0, 0.2);
+            border: 1px solid #ff0000;
+            color: #ff0000;
+            box-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
+        }
+
+        .btn-danger:hover {
+            background: rgba(255, 0, 0, 0.3);
+            border-color: #ff0000;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.8);
+        }
+
+        .btn-success {
+            background: rgba(0, 255, 0, 0.2);
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            box-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+        }
+
+        .btn-success:hover {
+            background: rgba(0, 255, 0, 0.3);
+            border-color: #00ff00;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.8);
+        }
+
+        .text-muted {
+            color: #00ff00 !important;
+        }
+
+        .font-weight-bold {
+            color: #00ffff !important;
+        }
+
+        .comment-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding-right: 10px;
+        }
+
+        .comment-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .comment-list::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .comment-list::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 255, 0.5);
+            border-radius: 3px;
+        }
+
+        .comment-item {
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 2px;
+            border-left: 4px solid #00ffff;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .comment-item.teacher {
+            border-left-color: #ff00ff;
+            box-shadow: 0 0 10px rgba(255, 0, 255, 0.3);
+        }
+
+        .comment-item.student {
+            border-left-color: #00ff00;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+        }
+
+        .comment-item.system {
+            border-left-color: #00ffff;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+
+        .comment-author .name {
+            font-weight: bold;
+            color: #00ffff;
+            font-family: 'Courier New', monospace;
+        }
+
+        .comment-author .badge {
+            background: rgba(0, 255, 255, 0.2);
+            color: #00ffff;
+            border: 1px solid #00ffff;
+            border-radius: 2px;
+        }
+
+        .comment-content {
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .comment-meta {
+            color: #00ffff;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .comment-tips {
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        /* 弹幕关键词分析样式 */
+        #keywordAnalysis {
+            color: #00ffff;
+            font-family: 'Courier New', monospace;
+        }
+
+        #keywordAnalysis h6 {
+            color: #00ffff;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+        }
+
+        #keywordAnalysis .keyword-item {
+            margin-bottom: 10px;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        #keywordAnalysis .keyword-item:hover {
+            background: rgba(0, 255, 255, 0.1);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        #keywordAnalysis .keyword-name {
+            font-weight: bold;
+            color: #00ffff;
+            margin-right: 10px;
+        }
+
+        #keywordAnalysis .keyword-count {
+            color: #00ff00;
+            font-size: 12px;
+        }
+
+        #keywordAnalysis .keyword-bar {
+            height: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+            margin-top: 5px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+
+        #keywordAnalysis .keyword-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, rgba(0, 255, 255, 0.5), rgba(0, 255, 255, 0.8));
+            border-radius: 4px;
+            transition: width 1s ease;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        /* 智能推荐样式 */
+
+
+        .bg-white {
+            background: rgba(10, 10, 20, 0.8) !important;
+            border: 1px solid rgba(0, 255, 255, 0.3) !important;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.2) !important;
+        }
+
+        .bg-light {
+            background: rgba(10, 10, 20, 0.8) !important;
+            border: 1px solid rgba(0, 255, 255, 0.3) !important;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.2) !important;
+        }
+
+        .bg-info {
+            background: rgba(0, 255, 255, 0.1) !important;
+        }
+
+        .border {
+            border: 1px solid rgba(0, 255, 255, 0.3) !important;
+        }
+
+        .border-info {
+            border: 1px solid rgba(0, 255, 255, 0.3) !important;
+        }
+
+        .rounded {
+            border-radius: 2px !important;
+        }
+
+        .shadow {
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.2) !important;
+        }
+
+        .border-dashed {
+            border-style: dashed !important;
+            border-color: rgba(0, 255, 255, 0.3) !important;
+        }
+
+        .text-primary {
+            color: #00ffff !important;
+        }
+
+        .text-center {
+            color: #00ffff !important;
+        }
+
+        .classroom-id-container {
+            color: #00ffff;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* 视频树样式 */
+        #videoTreeContainer {
+            height: 400px;
+            overflow: auto;
+        }
+
+        .video-node {
+            padding: 8px;
+            margin: 4px 0;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .video-node:hover {
+            background: rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .video-node.active {
+            background: rgba(0, 255, 255, 0.3);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+        }
+
+        .video-node span {
+            color: #ffffff;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+            font-weight: bold;
+        }
+
+        .video-node-children {
+            margin-left: 20px;
+            margin-top: 4px;
+        }
+
+        /* 视频列表样式 */
+        .video-item {
+            padding: 10px;
+            margin: 10px 0;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 2px;
+            transition: all 0.3s;
+        }
+
+        .video-item:hover {
+            background: rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .video-item.active {
+            background: rgba(0, 255, 255, 0.3);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+        }
+
+        .video-item-title {
+            color: #00ffff;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .video-item-info {
+            color: #00ff00;
+            font-size: 0.9em;
+        }
+    </style>
+<script src="/js/app-config.js"></script>
+<script src="/js/ui-common.js"></script>
+</head>
+<body>
+    <input type="hidden" id="classroomTeacherId" th:value="${teacherId}">
+    <div class="container mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>教师课堂 - 课堂互动系统</h2>
+            <div class="d-flex align-items-center gap-4">
+                <!-- PPT集成区域 -->
+                <div class="ppt-integration">
+                    <a th:href="@{/kdocs(teacherId=${teacherId})}" class="btn btn-primary">
+                        <i class="fas fa-file-powerpoint"></i> 打开PPT课堂
+                    </a>
+                </div>
+                <div class="classroom-id-container">
+                    <span class="text-muted">课堂ID:</span>
+                    <span id="classroomId" class="mx-2 font-weight-bold" th:text="${classroom.id}"></span>
+                    <button id="copyClassroomIdBtn" class="btn btn-sm btn-primary" onclick="copyClassroomId()">
+                        <i class="fas fa-copy"></i> 复制
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 视频和Canvas弹幕层 -->
+        <div class="video-wrapper mb-4">
+            <video 
+                id="videoRef" 
+                class="video-element" 
+                controls 
+                autoplay 
+                muted 
+                src="" 
+                type="video/mp4"
+                poster="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=video%20player%20placeholder%20with%20play%20button&image_size=landscape_16_9"
+            >
+                您的浏览器不支持HTML5视频播放
+                <source src="" type="video/mp4">
+            </video>
+            <canvas id="canvasRef" class="barrage-canvas"></canvas>
+        </div>
+        
+        <!-- 弹幕输入区域 -->
+        <div class="barrage-input-area">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4>发送弹幕</h4>
+                <div class="d-flex gap-2">
+                    <button 
+                        id="toggleDanmakuBtn" 
+                        class="btn btn-warning"
+                        onclick="toggleStudentDanmaku()"
+                    >
+                        <i class="fas fa-comment-slash"></i> 禁止学生发弹幕
+                    </button>
+                    <button 
+                        id="toggleAllMessagesBtn" 
+                        class="btn btn-danger"
+                        onclick="toggleStudentAllMessages()"
+                    >
+                        <i class="fas fa-ban"></i> 禁止学生发消息
+                    </button>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-8">
+                    <input 
+                        type="text" 
+                        id="barrageInput" 
+                        class="form-control" 
+                        placeholder="输入弹幕内容..."
+                        maxlength="50"
+                    >
+                </div>
+                <div class="col-md-4">
+                    <button 
+                        id="sendBarrageBtn" 
+                        class="btn btn-primary w-100"
+                    >
+                        发送弹幕
+                    </button>
+                </div>
+            </div>
+            <div class="barrage-controls">
+                <div class="row mt-2">
+                    <div class="col-md-4">
+                        <label class="form-label">字体大小</label>
+                        <select id="fontSizeSelect" class="form-select">
+                            <option value="20">小</option>
+                            <option value="24" selected>中</option>
+                            <option value="28">大</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">弹幕颜色</label>
+                        <input 
+                            type="color" 
+                            id="colorPicker" 
+                            class="form-control form-control-color"
+                            value="#ffffff"
+                        >
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">弹幕模式</label>
+                        <select id="modeSelect" class="form-select">
+                            <option value="1" selected>滚动</option>
+                            <option value="2">顶部</option>
+                            <option value="3">底部</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 评论区 -->
+        <div class="mt-4 p-4 bg-white rounded shadow">
+            <div class="comment-header d-flex justify-content-between align-items-center mb-3">
+                <h4><i class="fas fa-comments"></i> 课堂讨论</h4>
+                <div class="d-flex align-items-center gap-3">
+                    <button 
+                        id="toggleCommentBtn" 
+                        class="btn btn-secondary"
+                        onclick="toggleStudentComments()"
+                    >
+                        <i class="fas fa-comment-slash"></i> 禁止学生发评论
+                    </button>
+                    <span id="commentCount" class="text-muted">0 条评论</span>
+                </div>
+            </div>
+            
+            <div class="comment-list" id="commentList" style="max-height: 300px; overflow-y: auto; margin-bottom: 20px; padding-right: 10px;">
+                <div class="comment-item system p-3 mb-2 rounded border-left-4 border-warning bg-light">
+                    <div class="comment-author d-flex align-items-center mb-2">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <span class="font-weight-bold">系统</span>
+                        <span class="ml-2 px-2 py-0.5 bg-warning text-white text-xs rounded">系统消息</span>
+                    </div>
+                    <div class="comment-content">欢迎使用课堂讨论功能！您可以在这里与学生进行实时交流。</div>
+                    <div class="comment-meta text-xs text-muted mt-2">
+                        <span>刚刚</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="comment-input-area">
+                <div class="row">
+                    <div class="col-md-9">
+                        <textarea 
+                            id="commentInput" 
+                            class="form-control" 
+                            placeholder="输入评论内容...（按 Ctrl+Enter 发送）"
+                            rows="3"
+                            maxlength="200"
+                        ></textarea>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-flex flex-column gap-2">
+                            <button 
+                                id="sendCommentBtn" 
+                                class="btn btn-primary w-100"
+                                onclick="sendComment()"
+                            >
+                                发送评论
+                            </button>
+                            <button 
+                                id="clearCommentBtn" 
+                                class="btn btn-secondary w-100"
+                                onclick="clearCommentInput()"
+                            >
+                                清空
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="comment-tips text-xs text-muted mt-2 text-right">
+                    按 Ctrl+Enter 快速发送
+                </div>
+            </div>
+        </div>
+
+        <!-- 智能推荐区域 -->
+        <div class="mt-4 p-4 bg-info bg-opacity-10 rounded border border-info">
+            <h4><i class="fas fa-robot"></i> 智能视频推荐</h4>
+            <div class="row">
+    
+                <!-- 关键词分析 -->
+                <div class="col-md-12">
+                    <div class="bg-white p-3 rounded shadow">
+                        <h5>弹幕关键词分析</h5>
+                        <div id="keywordAnalysis" class="mt-3">
+                            <div class="text-center py-4 text-muted">
+                                <i class="fas fa-chart-pie fa-2x mb-2"></i>
+                                <p>正在收集和分析弹幕...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 视频树形结构 -->
+        <div class="mt-4 p-4 bg-light rounded">
+            <h4><i class="fas fa-sitemap"></i> 视频树形结构</h4>
+            <div class="border border-gray-200 rounded-lg p-4 bg-white">
+                <div id="videoTreeContainer" style="height: 400px; border: 1px solid #e0e0e0; border-radius: 4px;">
+                    <div class="text-center py-8 text-muted">
+                        <i class="fas fa-tree fa-3x mb-3"></i>
+                        <p>加载视频树形结构...</p>
+                    </div>
+                </div>
+                <div class="mt-3 d-flex justify-content-between">
+                    <button id="refreshTreeBtn" class="btn btn-outline-primary">
+                        <i class="fas fa-sync"></i> 刷新树结构
+                    </button>
+                    <button id="expandAllBtn" class="btn btn-outline-secondary">
+                        <i class="fas fa-plus-square"></i> 展开全部
+                    </button>
+                    <button id="collapseAllBtn" class="btn btn-outline-secondary">
+                        <i class="fas fa-minus-square"></i> 收起全部
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 文件管理 -->
+        <div class="mt-4 p-4 bg-light rounded">
+            <h4><i class="fas fa-folder"></i> 文件管理</h4>
+            <div class="border border-gray-200 rounded-lg p-4 bg-white">
+                <div class="mb-4">
+                    <h5>删除文件</h5>
+                    <div class="mb-3">
+                        <label class="form-label">选择文件类型</label>
+                        <select id="fileTypeSelect" class="form-select">
+                            <option value="video">视频文件</option>
+                            <option value="json">JSON文件</option>
+                        </select>
+                    </div>
+                    <div id="videoFileList" class="mb-3">
+                        <label class="form-label">选择视频文件</label>
+                        <select id="videoFileSelect" class="form-select">
+                            <option value="">加载中...</option>
+                        </select>
+                    </div>
+                    <div id="jsonFileList" class="mb-3" style="display: none;">
+                        <label class="form-label">选择JSON文件</label>
+                        <select id="jsonFileSelect" class="form-select">
+                            <option value="">加载中...</option>
+                        </select>
+                    </div>
+                    <button id="deleteFileBtn" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> 删除选中文件
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 学生观点面板 -->
+        <div class="mt-4 p-4 bg-light rounded">
+            <h4><i class="fas fa-lightbulb"></i> 学生观点</h4>
+            <div class="border border-gray-200 rounded-lg p-4 bg-white">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span id="opinionCount" class="text-muted">0 条观点</span>
+                    <div class="d-flex gap-2">
+                        <button id="selectAllOpinionsBtn" class="btn btn-sm btn-secondary" onclick="selectAllOpinions()">
+                            <i class="fas fa-check-square"></i> 全选
+                        </button>
+                        <button id="deselectAllOpinionsBtn" class="btn btn-sm btn-secondary" onclick="deselectAllOpinions()">
+                            <i class="fas fa-square"></i> 取消全选
+                        </button>
+                        <button id="exportOpinionsBtn" class="btn btn-sm btn-success" onclick="exportSelectedOpinions()">
+                            <i class="fas fa-download"></i> 导出选中为TXT
+                        </button>
+                    </div>
+                </div>
+                <div id="opinionListContainer" style="max-height: 400px; overflow-y: auto; padding-right: 10px;">
+                    <div class="text-center py-4 text-muted">
+                        <i class="fas fa-lightbulb fa-2x mb-2"></i>
+                        <p>等待学生发表观点...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // 全局变量
+        let videoRef = null;
+        let canvasRef = null;
+        let ctx = null;
+        let animationFrameId = null;
+        let barrages = [];
+        let ws = null;
+        let wsManager = null;
+        let isStudentDanmakuDisabled = false;
+        let isStudentCommentsDisabled = false;
+        let isStudentAllMessagesDisabled = false;
+        let isPlayingVideo = false; // 视频播放状态
+        let commentList = [];
+        const maxComments = 200;
+        let currentVideoNode = null;
+        let videoTree = null;
+        let keywordAnalysisInterval = null;
+        let barrageRenderer = null;
+        let commentListManager = null;
+        let teacherOpinionList = [];
+        let videoPreloader = null;
+        let keywordCounts = new Map(); // 关键词计数
+        
+        // 视频预加载管理器
+        class VideoPreloader {
+            constructor() {
+                this.preloadedVideos = new Map();
+                this.maxPreloadSize = 8 * 1024 * 1024; // 8MB 预加载大小
+                this.maxConcurrentPreloads = 3;        // 最大同时预加载数量
+            }
+            
+            // 预加载相邻子节点
+            preloadAdjacentNodes(currentNodeId) {
+                console.log(`开始预加载相邻子节点: ${currentNodeId}`);
+                
+                // 获取所有相邻子节点（通过link连接）
+                const adjacentNodes = getChildNodes(currentNodeId);
+                
+                if (adjacentNodes.length === 0) {
+                    console.log('当前节点没有相邻子节点');
+                    return;
+                }
+                
+                console.log(`找到 ${adjacentNodes.length} 个相邻子节点`);
+                
+                // 根据网络条件调整预加载策略
+                const networkStrategy = this.getNetworkStrategy();
+                const nodesToPreload = adjacentNodes.slice(0, Math.min(adjacentNodes.length, networkStrategy.maxNodes));
+                
+                console.log(`根据网络条件，预加载 ${nodesToPreload.length} 个节点`);
+                
+                // 按顺序预加载子节点
+                nodesToPreload.forEach((node, index) => {
+                    if (node.fileName) {
+                        // 根据索引分配优先级
+                        const priority = index === 0 ? 'high' : index === 1 ? 'medium' : 'low';
+                        this.preloadVideo(node, priority);
+                    }
+                });
+            }
+            
+            // 获取相邻子节点
+            getAdjacentChildNodes(currentNodeId) {
+                // 调用现有的 getChildNodes 函数获取子节点
+                return getChildNodes(currentNodeId);
+            }
+            
+            // 预加载视频
+            preloadVideo(node, priority) {
+                if (!this.preloadedVideos.has(node.id)) {
+                    console.log(`预加载视频 [${priority}]: ${node.name}`);
+                    
+                    const videoUrl = `/video/stream/${node.fileName}`;
+                    // 根据优先级调整预加载大小
+                    const preloadSize = this.getPreloadSizeByPriority(priority);
+                    
+                    // 发送范围请求，只预加载部分内容
+                    fetch(videoUrl, {
+                        method: 'GET',
+                        headers: {
+                            'Range': `bytes=0-${preloadSize}`
+                        }
+                    })
+                    .then(response => {
+                        if (response.ok || response.status === 206) {
+                            console.log(`预加载视频 ${node.name} 成功`);
+                            this.preloadedVideos.set(node.id, {
+                                url: videoUrl,
+                                priority: priority,
+                                timestamp: Date.now()
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error(`预加载视频 ${node.name} 失败:`, error);
+                    });
+                }
+            }
+            
+            // 根据优先级获取预加载大小
+            getPreloadSizeByPriority(priority) {
+                switch (priority) {
+                    case 'high':
+                        return 10 * 1024 * 1024; // 高优先级：10MB
+                    case 'medium':
+                        return 6 * 1024 * 1024;  // 中优先级：6MB
+                    case 'low':
+                        return 3 * 1024 * 1024;   // 低优先级：3MB
+                    default:
+                        return 5 * 1024 * 1024;   // 默认：5MB
+                }
+            }
+            
+            // 获取网络策略
+            getNetworkStrategy() {
+                if (!('connection' in navigator)) {
+                    return { effectiveType: 'unknown', maxNodes: 3 };
+                }
+                
+                const connection = navigator.connection;
+                let maxNodes;
+                
+                switch (connection.effectiveType) {
+                    case '4g':
+                        maxNodes = 5;  // 4G：最多预加载5个节点
+                        break;
+                    case '3g':
+                        maxNodes = 3;  // 3G：最多预加载3个节点
+                        break;
+                    default:
+                        maxNodes = 2;  // 其他：最多预加载2个节点
+                        break;
+                }
+                
+                return {
+                    effectiveType: connection.effectiveType,
+                    maxNodes: maxNodes
+                };
+            }
+            
+            // 清理过期预加载
+            cleanup() {
+                const now = Date.now();
+                for (const [nodeId, info] of this.preloadedVideos.entries()) {
+                    if (now - info.timestamp > 5 * 60 * 1000) { // 5分钟过期
+                        this.preloadedVideos.delete(nodeId);
+                        console.log(`清理过期预加载: ${nodeId}`);
+                    }
+                }
+            }
+            
+            // 检查视频是否已预加载
+            isPreloaded(nodeId) {
+                return this.preloadedVideos.has(nodeId);
+            }
+        }
+        
+        // 弹幕渲染器类
+        class BarrageRenderer {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.barrages = [];
+                this.animationFrameId = null;
+            }
+            
+            addBarrage(barrage) {
+                console.log('添加弹幕:', barrage);
+                this.barrages.push(barrage);
+                if (!this.animationFrameId) {
+                    this.start();
+                }
+            }
+            
+            start() {
+                if (!this.animationFrameId) {
+                    this.draw();
+                }
+            }
+            
+            stop() {
+                if (this.animationFrameId) {
+                    cancelAnimationFrame(this.animationFrameId);
+                    this.animationFrameId = null;
+                }
+            }
+            
+            draw() {
+                // 清除画布
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // 绘制并更新弹幕
+                const activeBarrages = [];
+                
+                for (const barrage of this.barrages) {
+                    // 保存当前样式
+                    this.ctx.save();
+                    
+                    // 设置弹幕样式
+                    this.ctx.font = `bold ${barrage.fontSize}px sans-serif`;
+                    this.ctx.fillStyle = barrage.color;
+                    this.ctx.strokeStyle = '#000';
+                    this.ctx.lineWidth = 3;
+                    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+                    this.ctx.shadowBlur = 2;
+                    this.ctx.shadowOffsetX = 1;
+                    this.ctx.shadowOffsetY = 1;
+                    
+                    // 计算文字宽度
+                    const textWidth = this.ctx.measureText(barrage.text).width;
+                    
+                    // 绘制文字
+                    this.ctx.strokeText(barrage.text, barrage.x, barrage.y);
+                    this.ctx.fillText(barrage.text, barrage.x, barrage.y);
+                    
+                    // 更新位置 - 减慢弹幕速度
+                    barrage.x -= 1; // 原来是3，现在改为1
+                    
+                    // 恢复样式
+                    this.ctx.restore();
+                    
+                    // 只保留在画布内的弹幕
+                    if (barrage.x > -textWidth) {
+                        activeBarrages.push(barrage);
+                    }
+                }
+                
+                // 更新弹幕列表
+                this.barrages = activeBarrages;
+                
+                // 循环动画
+                this.animationFrameId = requestAnimationFrame(() => this.draw());
+            }
+            
+            clear() {
+                this.barrages = [];
+            }
+        }
+        
+        // WebSocket管理器类
+        class WebSocketManager {
+            constructor(url, options = {}) {
+                this.url = url.replace('http://', 'ws://').replace('https://', 'wss://');
+                this.options = {
+                    reconnectInterval: 3000,
+                    maxReconnectAttempts: 5,
+                    ...options
+                };
+                this.ws = null;
+                this.reconnectAttempts = 0;
+                this.callbacks = {
+                    onOpen: [],
+                    onMessage: [],
+                    onClose: [],
+                    onError: []
+                };
+                this.connect();
+            }
+            
+            connect() {
+                try {
+                    // 使用原生WebSocket
+                    console.log('使用原生WebSocket连接');
+                    console.log('WebSocket连接URL:', this.url);
+                    this.ws = new WebSocket(this.url);
+                    
+                    this.ws.onopen = (event) => {
+                        console.log('WebSocket连接已建立');
+                        this.reconnectAttempts = 0;
+                        this.callbacks.onOpen.forEach(callback => callback(event));
+                    };
+                    
+                    this.ws.onmessage = (event) => {
+                        this.callbacks.onMessage.forEach(callback => callback(event));
+                    };
+                    
+                    this.ws.onclose = (event) => {
+                        console.log('WebSocket连接已关闭', event.code, event.reason);
+                        this.callbacks.onClose.forEach(callback => callback(event));
+                        
+                        // 尝试重新连接
+                        if (this.reconnectAttempts < this.options.maxReconnectAttempts) {
+                            this.reconnectAttempts++;
+                            console.log(`尝试重新连接 (${this.reconnectAttempts}/${this.options.maxReconnectAttempts})`);
+                            setTimeout(() => this.connect(), this.options.reconnectInterval);
+                        }
+                    };
+                    
+                    this.ws.onerror = (error) => {
+                        console.error('WebSocket错误:', error);
+                        this.callbacks.onError.forEach(callback => callback(error));
+                    };
+                } catch (error) {
+                    console.error('WebSocket连接失败:', error);
+                    this.callbacks.onError.forEach(callback => callback(error));
+                }
+            }
+            
+            send(data) {
+                if (this.ws && (this.ws.readyState === 1)) {
+                    this.ws.send(JSON.stringify(data));
+                    return true;
+                }
+                return false;
+            }
+            
+            on(event, callback) {
+                if (this.callbacks[event]) {
+                    this.callbacks[event].push(callback);
+                }
+            }
+            
+            close() {
+                if (this.ws) {
+                    this.ws.close();
+                }
+            }
+        }
+        
+        // 评论列表管理
+        class CommentListManager {
+            constructor(container) {
+                this.container = container;
+                this.comments = [];
+            }
+            
+            setComments(comments) {
+                this.comments = comments;
+                this.render();
+            }
+            
+            addComment(comment) {
+                this.comments.push(comment);
+                this.render();
+                this.container.scrollTop = this.container.scrollHeight;
+            }
+            
+            render() {
+                this.container.innerHTML = '';
+                
+                this.comments.forEach(comment => {
+                    const element = this.createCommentElement(comment);
+                    this.container.appendChild(element);
+                });
+            }
+            
+            createCommentElement(comment) {
+                const element = document.createElement('div');
+                element.className = `comment-item ${comment.type} p-3 mb-2 rounded border-left-4 ${comment.type === 'system' ? 'border-warning bg-light' : comment.type === 'teacher' ? 'border-primary bg-info bg-opacity-10' : 'border-success bg-success bg-opacity-10'}`;
+                element.innerHTML = `
+                    <div class="comment-author d-flex align-items-center mb-2">
+                        <i class="fas fa-${comment.type === 'system' ? 'info-circle' : comment.type === 'teacher' ? 'user-tie' : 'user'} mr-2"></i>
+                        <span class="font-weight-bold">${comment.author}</span>
+                        ${comment.type === 'system' ? '<span class="ml-2 px-2 py-0.5 bg-warning text-white text-xs rounded">系统消息</span>' : ''}
+                    </div>
+                    <div class="comment-content">${comment.content}</div>
+                    <div class="comment-meta text-xs text-muted mt-2">
+                        <span>${comment.time}</span>
+                    </div>
+                `;
+                return element;
+            }
+        }
+        
+        // 初始化函数
+        function init() {
+            console.log('开始初始化教师端课堂系统...');
+            
+            // 显示加载状态
+            showLoadingState();
+            
+            videoRef = document.getElementById('videoRef');
+            canvasRef = document.getElementById('canvasRef');
+            
+            if (!videoRef || !canvasRef) {
+                console.error('视频或Canvas元素未找到');
+                hideLoadingState();
+                return;
+            }
+            
+            // 初始化Canvas
+            const container = canvasRef.parentElement;
+            canvasRef.width = container.clientWidth;
+            canvasRef.height = container.clientHeight;
+            
+            // 初始化ctx变量
+            ctx = canvasRef.getContext('2d');
+            
+            // 初始化视频预加载管理器
+            videoPreloader = new VideoPreloader();
+            
+            // 初始化智能推荐系统
+            initIntelligentRecommendation();
+            
+            // 初始化视频树形结构（从localStorage读取数据）
+            initVideoTreeFromStorage().then(() => {
+                // 初始化完成后检查，如果没有currentVideoNode，则从/video/list获取视频并自动播放
+                if (!currentVideoNode) {
+                    console.log('没有视频树数据，尝试从/video/list获取视频并自动播放');
+                    return initVideoFromList();
+                }
+            }).finally(() => {
+                // 隐藏加载状态
+                hideLoadingState();
+            });
+            
+            // 创建弹幕渲染器
+            barrageRenderer = new BarrageRenderer(canvasRef);
+            
+            // 初始化评论列表管理器
+            const commentListElement = document.getElementById('commentList');
+            if (commentListElement) {
+                commentListManager = new CommentListManager(commentListElement);
+                console.log('评论列表管理器初始化完成');
+            }
+            
+            // 绑定视频事件
+            videoRef.addEventListener('play', function() {
+                barrageRenderer.start();
+                handleVideoPlay();
+                
+                // 预加载相邻子节点
+                if (currentVideoNode) {
+                    videoPreloader.preloadAdjacentNodes(currentVideoNode.id);
+                }
+            });
+            videoRef.addEventListener('pause', function() {
+                barrageRenderer.stop();
+                handleVideoPause();
+            });
+            videoRef.addEventListener('ended', handleVideoEnded);
+            
+            // 绑定弹幕发送事件
+            document.getElementById('sendBarrageBtn').addEventListener('click', sendBarrage);
+            document.getElementById('barrageInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendBarrage();
+                }
+            });
+            
+            // 绑定评论发送事件
+            document.getElementById('sendCommentBtn').addEventListener('click', sendComment);
+            document.getElementById('clearCommentBtn').addEventListener('click', clearCommentInput);
+            document.getElementById('commentInput').addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    e.preventDefault();
+                    sendComment();
+                }
+            });
+            
+            // 初始化WebSocket连接
+        initWebSocket();
+        
+        // 自动开始弹幕动画
+        barrageRenderer.start();
+        
+        // 初始化文件管理
+        initFileManagement();
+        
+        console.log('教师端课堂系统初始化完成');
+    }
+    
+    // 初始化文件管理
+    function initFileManagement() {
+        console.log('初始化文件管理...');
+        
+        // 加载视频文件列表
+        loadVideoFileList();
+        
+        // 加载JSON文件列表
+        loadJsonFileList();
+        
+        // 绑定文件类型选择事件
+        document.getElementById('fileTypeSelect').addEventListener('change', function() {
+            const fileType = this.value;
+            if (fileType === 'video') {
+                document.getElementById('videoFileList').style.display = 'block';
+                document.getElementById('jsonFileList').style.display = 'none';
+            } else {
+                document.getElementById('videoFileList').style.display = 'none';
+                document.getElementById('jsonFileList').style.display = 'block';
+            }
+        });
+        
+        // 绑定删除文件按钮事件
+        document.getElementById('deleteFileBtn').addEventListener('click', function() {
+            const fileType = document.getElementById('fileTypeSelect').value;
+            if (fileType === 'video') {
+                deleteVideoFile();
+            } else {
+                deleteJsonFile();
+            }
+        });
+    }
+    
+    // 加载视频文件列表
+    function loadVideoFileList() {
+        console.log('加载视频文件列表...');
+        
+        fetch('/video/list')
+            .then(response => response.json())
+            .then(data => {
+                const select = document.getElementById('videoFileSelect');
+                select.innerHTML = '';
+                
+                if (Array.isArray(data) && data.length > 0) {
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.textContent = '请选择视频文件';
+                    select.appendChild(defaultOption);
+                    
+                    data.forEach(video => {
+                        const option = document.createElement('option');
+                        option.value = video.fileName;
+                        option.textContent = video.title || video.fileName;
+                        select.appendChild(option);
+                    });
+                } else {
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = '无视频文件';
+                    select.appendChild(option);
+                }
+            })
+            .catch(error => {
+                console.error('加载视频文件列表失败:', error);
+                const select = document.getElementById('videoFileSelect');
+                select.innerHTML = '<option value="">加载失败</option>';
+            });
+    }
+    
+    // 加载JSON文件列表
+    function loadJsonFileList() {
+        console.log('加载JSON文件列表...');
+        
+        // 直接从服务器获取JSON文件列表
+        const teacherId = document.getElementById('classroomTeacherId').value;
+        if (!teacherId) {
+            console.warn('未获取到教师身份，跳过JSON文件加载');
+            return;
+        }
+        fetch('/json-storage/list?teacherId=' + encodeURIComponent(teacherId))
+            .then(response => response.json())
+            .then(data => {
+                const select = document.getElementById('jsonFileSelect');
+                select.innerHTML = '';
+                
+                if (data.success && Array.isArray(data.files) && data.files.length > 0) {
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.textContent = '请选择JSON文件';
+                    select.appendChild(defaultOption);
+                    
+                    data.files.forEach(file => {
+                        const option = document.createElement('option');
+                        option.value = file.fileName;
+                        option.textContent = file.fileName;
+                        select.appendChild(option);
+                    });
+                } else {
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = '无JSON文件';
+                    select.appendChild(option);
+                }
+            })
+            .catch(error => {
+                console.error('加载JSON文件列表失败:', error);
+                const select = document.getElementById('jsonFileSelect');
+                select.innerHTML = '<option value="">加载失败</option>';
+            });
+    }
+    
+    // 删除视频文件
+    function deleteVideoFile() {
+        const fileName = document.getElementById('videoFileSelect').value;
+        if (!fileName) {
+            showMessage('请选择要删除的视频文件', 'warning');
+            return;
+        }
+        
+        if (confirm(`确定要删除视频文件: ${fileName}吗？`)) {
+            fetch(`/video/delete/${encodeURIComponent(fileName)}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('视频文件删除成功', 'success');
+                    loadVideoFileList(); // 重新加载视频文件列表
+                } else {
+                    showMessage('视频文件删除失败: ' + (data.error || '未知错误'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('删除视频文件失败:', error);
+                showMessage('删除视频文件失败: ' + error.message, 'error');
+            });
+        }
+    }
+    
+    // 删除JSON文件
+    function deleteJsonFile() {
+        const fileName = document.getElementById('jsonFileSelect').value;
+        if (!fileName) {
+            showMessage('请选择要删除的JSON文件', 'warning');
+            return;
+        }
+        
+        if (confirm(`确定要删除JSON文件: ${fileName}吗？`)) {
+            fetch('/json-storage/delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `fileName=${encodeURIComponent(fileName)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('JSON文件删除成功', 'success');
+                    loadJsonFileList(); // 重新加载JSON文件列表
+                } else {
+                    showMessage('JSON文件删除失败: ' + (data.error || '未知错误'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('删除JSON文件失败:', error);
+                showMessage('删除JSON文件失败: ' + error.message, 'error');
+            });
+        }
+    }
+        
+        // 显示加载状态
+        function showLoadingState() {
+            const loadingElement = document.createElement('div');
+            loadingElement.id = 'loadingOverlay';
+            loadingElement.style.position = 'fixed';
+            loadingElement.style.top = '0';
+            loadingElement.style.left = '0';
+            loadingElement.style.width = '100%';
+            loadingElement.style.height = '100%';
+            loadingElement.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+            loadingElement.style.display = 'flex';
+            loadingElement.style.justifyContent = 'center';
+            loadingElement.style.alignItems = 'center';
+            loadingElement.style.zIndex = '9999';
+            loadingElement.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border text-cyan" style="width: 5rem; height: 5rem;" role="status">
+                        <span class="sr-only">加载中...</span>
+                    </div>
+                    <p class="mt-3 text-cyan" style="font-size: 1.2rem;">正在加载课堂资源...</p>
+                </div>
+            `;
+            document.body.appendChild(loadingElement);
+        }
+        
+        // 隐藏加载状态
+        function hideLoadingState() {
+            const loadingElement = document.getElementById('loadingOverlay');
+            if (loadingElement) {
+                loadingElement.remove();
+            }
+        }
+        
+        // 从/video/list获取视频并自动播放
+        function initVideoFromList() {
+            return new Promise((resolve, reject) => {
+                console.log('从/video/list获取视频并自动播放...');
+                
+                fetch('/video/list')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (Array.isArray(data) && data.length > 0) {
+                            console.log('找到视频列表:', data);
+                            
+                            // 使用第一个视频
+                            const firstVideo = data[0];
+                            console.log('第一个视频:', firstVideo);
+                            // 更新视频标签的src属性
+                            videoRef.src = firstVideo.url;
+                            // 更新source标签的src属性
+                            const sourceElement = videoRef.querySelector('source');
+                            if (sourceElement) {
+                                sourceElement.src = firstVideo.url;
+                                sourceElement.type = 'video/mp4';
+                            }
+                            console.log('设置视频URL:', firstVideo.url);
+                            // 加载视频并播放
+                            videoRef.load();
+                            videoRef.play().catch(error => {
+                                console.error('视频播放失败:', error);
+                                showMessage('视频播放失败，请检查视频文件', 'error');
+                            });
+                            
+                            // 尝试从视频树数据中找到匹配的节点
+                            let matchedNodeId = 'node_1'; // 默认值
+                            
+                            // 获取课堂ID
+                            const classroomId = getClassroomId();
+                            
+                            // 优先从对应课堂的localStorage中读取视频树数据
+                            let storedData = null;
+                            if (classroomId) {
+                                storedData = localStorage.getItem('videoTreeData_' + classroomId);
+                            }
+                            
+                            // 如果对应课堂没有视频树数据，尝试使用通用的视频树数据
+                            if (!storedData) {
+                                storedData = localStorage.getItem('videoTreeData');
+                            }
+                            
+                            if (storedData) {
+                                try {
+                                    const treeData = JSON.parse(storedData);
+                                    if (treeData.elements && Array.isArray(treeData.elements)) {
+                                        // 查找文件名匹配的节点
+                                        const matchedNode = treeData.elements.find(node => node.fileName === firstVideo.fileName);
+                                        if (matchedNode) {
+                                            matchedNodeId = matchedNode.id;
+                                            console.log('找到匹配的视频树节点:', matchedNodeId);
+                                        } else {
+                                            console.log('未找到匹配的视频树节点，使用默认ID');
+                                        }
+                                    }
+                                } catch (error) {
+                                    console.error('解析视频树数据失败:', error);
+                                }
+                            }
+                            
+                            // 初始化currentVideoNode，使用匹配的节点ID
+                            currentVideoNode = {
+                                id: matchedNodeId,
+                                name: firstVideo.title || firstVideo.fileName,
+                                description: '',
+                                videoUrl: firstVideo.url,
+                                fileName: firstVideo.fileName,
+                                keywords: [],
+                                x: 0,
+                                y: 0,
+                                width: 0,
+                                height: 0
+                            };
+                            
+                            console.log('初始化当前视频节点:', currentVideoNode);
+                            showMessage(`正在播放视频: ${currentVideoNode.name}`, 'success');
+                            
+                            // 加载视频树数据，建立视频和关键词的映射关系
+                            loadVideoKeywordMap().then(() => {
+                                resolve();
+                            }).catch(() => {
+                                resolve();
+                            });
+                        } else {
+                            console.log('未找到视频文件');
+                            showMessage('未找到视频文件，请先上传视频', 'warning');
+                            resolve();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('获取视频列表失败:', error);
+                        showMessage('获取视频列表失败', 'error');
+                        resolve();
+                    });
+            });
+        }
+        
+        // 获取课堂ID
+        function getClassroomId() {
+            // 从URL路径中提取课堂ID
+            const pathParts = window.location.pathname.split('/');
+            console.log('路径分割结果:', pathParts);
+            
+            // 找到classroom后面的ID
+            const classroomIndex = pathParts.indexOf('classroom');
+            const classroomId = classroomIndex !== -1 && pathParts.length > classroomIndex + 1 ? pathParts[classroomIndex + 1] : null;
+            console.log('classroom索引:', classroomIndex);
+            console.log('提取到的课堂ID:', classroomId);
+            
+            if (classroomId && classroomId !== 'classroom') {
+                return classroomId;
+            }
+            
+            // 从URL参数中获取课堂ID
+            const urlParams = new URLSearchParams(window.location.search);
+            const classroomIdFromUrl = urlParams.get('id');
+            if (classroomIdFromUrl) {
+                return classroomIdFromUrl;
+            }
+            
+            // 从页面中获取课堂ID（如果页面中显示了课堂ID）
+            const classroomIdElement = document.getElementById('classroomId');
+            if (classroomIdElement) {
+                return classroomIdElement.textContent.trim();
+            }
+            
+            return null;
+        }
+
+        // 加载视频树数据，建立视频和关键词的映射关系
+        function loadVideoKeywordMap() {
+            return new Promise((resolve, reject) => {
+                console.log('加载视频树数据，建立视频和关键词的映射关系...');
+                
+                // 获取课堂ID
+                const classroomId = getClassroomId();
+                console.log('当前课堂ID:', classroomId);
+                
+                // 优先从对应课堂的localStorage中读取视频树数据
+                let storedData = null;
+                if (classroomId) {
+                    storedData = localStorage.getItem('videoTreeData_' + classroomId);
+                }
+                
+                // 如果对应课堂没有视频树数据，尝试使用通用的视频树数据
+                if (!storedData) {
+                    storedData = localStorage.getItem('videoTreeData');
+                }
+                
+                if (storedData) {
+                    try {
+                        const treeData = JSON.parse(storedData);
+                        console.log('成功加载视频树数据');
+                        videoTree = treeData;
+                        
+                        // 构建视频和关键词的映射关系
+                        if (treeData.elements && Array.isArray(treeData.elements)) {
+                            console.log(`视频树包含 ${treeData.elements.length} 个节点`);
+                        }
+                        
+                        // 渲染视频树
+                        renderVideoTree();
+                        resolve();
+                    } catch (error) {
+                        console.error('解析视频树数据失败:', error);
+                        reject(error);
+                    }
+                } else {
+                    console.log('未找到视频树数据');
+                    reject(new Error('未找到视频树数据'));
+                }
+            });
+        }
+
+        // 初始化视频树形结构（从服务器获取数据）
+        function initVideoTreeFromStorage() {
+            return new Promise((resolve, reject) => {
+                console.log('从服务器初始化视频树形结构...');
+                
+                // 获取课堂ID
+                const classroomId = getClassroomId();
+                console.log('当前课堂ID:', classroomId);
+                
+                if (!classroomId) {
+                    console.error('无法获取课堂ID');
+                    resolve();
+                    return;
+                }
+                
+                // 从服务器获取视频树数据
+                fetch(`/teacher/classroom/${classroomId}/video-tree`)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('服务器返回的视频树数据:', data);
+                        
+                        if (data && data.success && data.videoTree) {
+                            console.log('成功从服务器加载视频树数据');
+                            videoTree = data.videoTree;
+                            
+                            // 根据links字段建立节点之间的父子关系
+                            buildNodeHierarchy(videoTree);
+                            
+                            // 保存到localStorage，以便后续使用
+                            if (classroomId) {
+                                localStorage.setItem('videoTreeData_' + classroomId, JSON.stringify(data.videoTree));
+                            }
+                            localStorage.setItem('videoTreeData', JSON.stringify(data.videoTree));
+                            
+                            // 渲染视频树
+                            renderVideoTree();
+                            
+                            // 检查是否有默认选中的节点
+                            if (videoTree.elements && videoTree.elements.length > 0) {
+                                // 找到第一个带有fileName的节点
+                                const firstVideoNode = videoTree.elements.find(node => node.fileName);
+                                if (firstVideoNode) {
+                                    currentVideoNode = firstVideoNode;
+                                    console.log('设置当前视频节点:', currentVideoNode.name);
+                                    
+                                    // 播放该视频
+                                    if (firstVideoNode.fileName) {
+                                        const videoUrl = `/video/stream/${firstVideoNode.fileName}`;
+                                        videoRef.src = videoUrl;
+                                        videoRef.load();
+                                        videoRef.play().catch(error => {
+                                            console.error('视频播放失败:', error);
+                                        });
+                                        showMessage(`正在播放视频: ${firstVideoNode.name}`, 'success');
+                                    }
+                                }
+                            }
+                            
+                            resolve();
+                        } else {
+                            console.log('服务器返回的视频树数据格式不正确或获取失败');
+                            
+                            // 尝试从localStorage获取备用数据
+                            let storedData = null;
+                            if (classroomId) {
+                                storedData = localStorage.getItem('videoTreeData_' + classroomId);
+                            }
+                            
+                            if (!storedData) {
+                                storedData = localStorage.getItem('videoTreeData');
+                            }
+                            
+                            if (storedData) {
+                                try {
+                                    const treeData = JSON.parse(storedData);
+                                    console.log('成功从localStorage加载备用视频树数据');
+                                    videoTree = treeData;
+                                    
+                                    // 根据links字段建立节点之间的父子关系
+                                    buildNodeHierarchy(videoTree);
+                                    
+                                    renderVideoTree();
+                                    
+                                    // 检查是否有默认选中的节点
+                                    if (treeData.elements && treeData.elements.length > 0) {
+                                        const firstVideoNode = treeData.elements.find(node => node.fileName);
+                                        if (firstVideoNode) {
+                                            currentVideoNode = firstVideoNode;
+                                            console.log('设置当前视频节点:', currentVideoNode.name);
+                                            
+                                            if (firstVideoNode.fileName) {
+                                                const videoUrl = `/video/stream/${firstVideoNode.fileName}`;
+                                                videoRef.src = videoUrl;
+                                                videoRef.load();
+                                                videoRef.play().catch(error => {
+                                                    console.error('视频播放失败:', error);
+                                                });
+                                                showMessage(`正在播放视频: ${firstVideoNode.name}`, 'success');
+                                            }
+                                        }
+                                    }
+                                } catch (error) {
+                                    console.error('解析localStorage视频树数据失败:', error);
+                                }
+                            }
+                            
+                            resolve();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('从服务器获取视频树数据失败:', error);
+                        
+                        // 尝试从localStorage获取备用数据
+                        let storedData = null;
+                        if (classroomId) {
+                            storedData = localStorage.getItem('videoTreeData_' + classroomId);
+                        }
+                        
+                        if (!storedData) {
+                            storedData = localStorage.getItem('videoTreeData');
+                        }
+                        
+                        if (storedData) {
+                            try {
+                                const treeData = JSON.parse(storedData);
+                                console.log('成功从localStorage加载备用视频树数据');
+                                videoTree = treeData;
+                                
+                                // 根据links字段建立节点之间的父子关系
+                                buildNodeHierarchy(videoTree);
+                                
+                                renderVideoTree();
+                                
+                                // 检查是否有默认选中的节点
+                                if (treeData.elements && treeData.elements.length > 0) {
+                                    const firstVideoNode = treeData.elements.find(node => node.fileName);
+                                    if (firstVideoNode) {
+                                        currentVideoNode = firstVideoNode;
+                                        console.log('设置当前视频节点:', currentVideoNode.name);
+                                        
+                                        if (firstVideoNode.fileName) {
+                                            const videoUrl = `/video/stream/${firstVideoNode.fileName}`;
+                                            videoRef.src = videoUrl;
+                                            videoRef.load();
+                                            videoRef.play().catch(error => {
+                                                console.error('视频播放失败:', error);
+                                            });
+                                            showMessage(`正在播放视频: ${firstVideoNode.name}`, 'success');
+                                        }
+                                    }
+                                }
+                            } catch (error) {
+                                console.error('解析localStorage视频树数据失败:', error);
+                            }
+                        }
+                        
+                        resolve();
+                    });
+            });
+        }
+        
+        // 根据links字段建立节点之间的父子关系
+        function buildNodeHierarchy(videoTree) {
+            if (!videoTree || !videoTree.elements || !videoTree.links) {
+                console.error('视频树数据不完整');
+                return;
+            }
+            
+            console.log('开始建立节点父子关系...');
+            
+            // 首先为所有节点添加children属性
+            videoTree.elements.forEach(node => {
+                node.children = [];
+            });
+            
+            // 根据links字段建立父子关系
+            videoTree.links.forEach(link => {
+                // 处理不同格式的link结构
+                let sourceId, targetId;
+                
+                if (link.source && link.target) {
+                    // 格式1: {"source": "node_1", "target": "node_2"}
+                    sourceId = typeof link.source === 'string' ? link.source : link.source.id;
+                    targetId = typeof link.target === 'string' ? link.target : link.target.id;
+                } else if (link.sourceId && link.targetId) {
+                    // 格式2: {"sourceId": "node_1", "targetId": "node_2"}
+                    sourceId = link.sourceId;
+                    targetId = link.targetId;
+                }
+                
+                if (sourceId && targetId) {
+                    const sourceNode = videoTree.elements.find(node => node.id === sourceId);
+                    const targetNode = videoTree.elements.find(node => node.id === targetId);
+                    
+                    if (sourceNode && targetNode) {
+                        sourceNode.children.push(targetNode);
+                        console.log(`建立父子关系: ${sourceId} -> ${targetId}`);
+                    } else {
+                        console.log(`未找到节点: source=${sourceId}, target=${targetId}`);
+                    }
+                }
+            });
+            
+            // 打印所有节点的子节点信息
+            videoTree.elements.forEach(node => {
+                console.log(`节点 ${node.id} (${node.name}) 的子节点:`, node.children.map(child => child.name));
+            });
+            
+            console.log('节点父子关系建立完成');
+        }
+
+        // 渲染视频树
+        function renderVideoTree() {
+            const container = document.getElementById('videoTreeContainer');
+            if (!container || !videoTree || !videoTree.elements) {
+                console.error('视频树容器或数据不存在');
+                return;
+            }
+            
+            console.log('开始渲染视频树...');
+            container.innerHTML = '';
+            
+            // 只显示当前视频节点的信息
+            if (currentVideoNode) {
+                const nodeElement = document.createElement('div');
+                nodeElement.className = 'video-node active';
+                nodeElement.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>${currentVideoNode.name || currentVideoNode.fileName}</span>
+                        <i class="fas fa-play-circle text-success"></i>
+                    </div>
+                `;
+                container.appendChild(nodeElement);
+            } else {
+                // 如果没有当前视频节点，显示所有视频节点
+                videoTree.elements.forEach(node => {
+                    if (node.fileName) {
+                        const nodeElement = document.createElement('div');
+                        nodeElement.className = `video-node ${currentVideoNode && currentVideoNode.id === node.id ? 'active' : ''}`;
+                        nodeElement.innerHTML = `
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>${node.name || node.fileName}</span>
+                                <i class="fas fa-play-circle text-success"></i>
+                            </div>
+                        `;
+                        
+                        // 绑定点击事件
+                        nodeElement.addEventListener('click', () => {
+                            playVideo(node);
+                        });
+                        
+                        container.appendChild(nodeElement);
+                    }
+                });
+            }
+            
+            console.log('视频树渲染完成');
+        }
+
+        // 播放视频
+        function playVideo(node) {
+            console.log('播放视频:', node.name);
+            
+            // 更新当前视频节点
+            currentVideoNode = node;
+            
+            // 更新视频树的选中状态
+            const videoNodes = document.querySelectorAll('.video-node');
+            videoNodes.forEach(videoNode => {
+                videoNode.classList.remove('active');
+            });
+            
+            // 找到并激活当前节点
+            const currentNodeElement = Array.from(videoNodes).find(element => {
+                // 简单匹配，实际应用中可能需要更精确的匹配
+                return element.textContent.trim() === node.name.trim();
+            });
+            
+            if (currentNodeElement) {
+                currentNodeElement.classList.add('active');
+            }
+            
+            // 播放视频
+            if (node.fileName) {
+                const videoUrl = `/video/stream/${node.fileName}`;
+                videoRef.src = videoUrl;
+                videoRef.load();
+                videoRef.play().catch(error => {
+                    console.error('视频播放失败:', error);
+                    showMessage('视频播放失败，请检查视频文件', 'error');
+                });
+                
+                showMessage(`正在播放视频: ${node.name}`, 'success');
+                
+                // 预加载相邻子节点
+                videoPreloader.preloadAdjacentNodes(node.id);
+            }
+        }
+
+        // 获取子节点
+        function getChildNodes(nodeId) {
+            console.log(`获取节点 ${nodeId} 的子节点`);
+            
+            if (!videoTree || !videoTree.elements) {
+                console.error('视频树数据不存在');
+                return [];
+            }
+            
+            // 递归查找节点
+            function findNode(nodes) {
+                for (const node of nodes) {
+                    if (node.id === nodeId) {
+                        return node;
+                    }
+                    if (node.children && node.children.length > 0) {
+                        const found = findNode(node.children);
+                        if (found) {
+                            return found;
+                        }
+                    }
+                }
+                return null;
+            }
+            
+            const node = findNode(videoTree.elements);
+            if (node && node.children) {
+                console.log(`找到 ${node.children.length} 个子节点`);
+                return node.children;
+            }
+            
+            console.log('未找到子节点');
+            return [];
+        }
+
+        // 初始化WebSocket连接
+        function initWebSocket() {
+            console.log('初始化WebSocket连接...');
+            
+            // 获取课堂ID
+            const classroomId = getClassroomId();
+            if (!classroomId) {
+                console.error('无法获取课堂ID，WebSocket连接初始化失败');
+                return;
+            }
+            
+            // 构建WebSocket URL - 连接到 /ws/teacher/{classroomId} 端点，使用原生WebSocket
+            const wsUrl = AppConfig.ws('/ws/teacher/' + classroomId);
+            console.log('WebSocket连接URL:', wsUrl);
+            
+            // 创建WebSocket管理器
+            wsManager = new WebSocketManager(wsUrl, {
+                reconnectInterval: 3000,
+                maxReconnectAttempts: 5
+            });
+            
+            // 绑定WebSocket事件
+            wsManager.on('onOpen', (event) => {
+                console.log('WebSocket连接已建立');
+                showMessage('WebSocket连接已建立', 'success');
+                
+                // 发送教师加入消息
+                wsManager.send({
+                    type: 'TEACHER_JOIN',
+                    classroomId: classroomId,
+                    role: 'teacher'
+                });
+            });
+            
+            wsManager.on('onMessage', (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('收到WebSocket消息:', data);
+                    
+                    // 处理不同类型的消息
+                    switch (data.type) {
+                        case 'DANMAKU_RECEIVED':
+                            handleDanmakuMessage(data.data);
+                            break;
+                        case 'COMMENT_RECEIVED':
+                            handleCommentMessage(data.data);
+                            break;
+                        case 'TEACHER_DANMAKU':
+                            handleDanmakuMessage(data.danmaku);
+                            break;
+                        case 'STUDENT_DANMAKU':
+                            handleDanmakuMessage(data.data);
+                            break;
+                        case 'OPINION_RECEIVED':
+                            handleOpinionMessage(data.data);
+                            break;
+                        default:
+                            console.log('未知消息类型:', data.type);
+                    }
+                } catch (error) {
+                    console.error('解析WebSocket消息失败:', error);
+                }
+            });
+            
+            wsManager.on('onError', (error) => {
+                console.error('WebSocket错误:', error);
+                showMessage('WebSocket连接错误', 'error');
+            });
+            
+            wsManager.on('onClose', (event) => {
+                console.log('WebSocket连接已关闭', event.code, event.reason);
+                showMessage('WebSocket连接已关闭', 'warning');
+            });
+        }
+
+        // 处理弹幕消息
+        function handleDanmakuMessage(data) {
+            console.log('处理弹幕消息:', data);
+            
+            // 直接使用data作为弹幕数据，因为从后端收到的已经是弹幕对象
+            const danmakuData = data;
+            console.log('解析后的弹幕数据:', danmakuData);
+            
+            // 创建弹幕对象
+            const barrage = {
+                id: danmakuData.id || Date.now(),
+                text: danmakuData.content || '',
+                color: danmakuData.color || '#ffffff',
+                fontSize: danmakuData.fontSize || 25,
+                mode: danmakuData.mode || 1,
+                x: canvasRef.width,
+                y: Math.random() * (canvasRef.height - 50) + 25,
+                speed: 1 // 减慢速度
+            };
+            
+            // 确保弹幕内容不为空
+            if (barrage.text) {
+                // 添加到渲染器
+                console.log('添加弹幕到渲染器:', barrage);
+                barrageRenderer.addBarrage(barrage);
+                
+                // 分析关键词
+                console.log('开始分析关键词:', barrage.text);
+                analyzeKeywords(barrage.text);
+            } else {
+                console.error('弹幕内容为空:', danmakuData);
+            }
+        }
+        
+        // 分析弹幕中的关键词
+        function analyzeKeywords(text) {
+            console.log('分析弹幕关键词:', text);
+            if (!currentVideoNode) {
+                console.log('当前节点不存在');
+                return;
+            }
+            
+            // 确保currentVideoNode有children属性
+            if (!currentVideoNode.children) {
+                console.log('当前节点没有children属性，尝试从videoTree中获取');
+                // 从videoTree中重新获取节点信息
+                if (videoTree && videoTree.elements) {
+                    const node = videoTree.elements.find(n => n.id === currentVideoNode.id);
+                    if (node && node.children) {
+                        currentVideoNode.children = node.children;
+                        console.log('已从videoTree中获取子节点信息');
+                    } else {
+                        console.log('无法获取子节点信息');
+                        return;
+                    }
+                } else {
+                    console.log('videoTree不存在');
+                    return;
+                }
+            }
+            
+            console.log('当前节点:', currentVideoNode.name, '子节点数量:', currentVideoNode.children.length);
+            
+            // 遍历当前节点的所有子节点
+            currentVideoNode.children.forEach(childNode => {
+                console.log('检查子节点:', childNode.name, '关键词:', childNode.keywords);
+                
+                // 处理不同格式的关键词属性
+                let keywords = [];
+                if (childNode.keywords) {
+                    if (Array.isArray(childNode.keywords)) {
+                        keywords = childNode.keywords;
+                    } else if (typeof childNode.keywords === 'object') {
+                        // 尝试从对象中提取关键词
+                        console.log('关键词是对象，尝试提取');
+                        // 检查对象是否有特定的关键词属性
+                        if (childNode.keywords.keywords) {
+                            if (Array.isArray(childNode.keywords.keywords)) {
+                                keywords = childNode.keywords.keywords;
+                            } else {
+                                keywords = [childNode.keywords.keywords];
+                            }
+                        } else {
+                            // 从对象中获取键作为关键词
+                            keywords = Object.keys(childNode.keywords);
+                        }
+                    } else if (typeof childNode.keywords === 'string') {
+                        keywords = [childNode.keywords];
+                    }
+                }
+                
+                if (keywords.length > 0) {
+                    console.log('处理关键词数组:', keywords);
+                    // 检查弹幕中是否包含子节点的关键词
+                    keywords.forEach(keyword => {
+                        console.log('检查关键词:', keyword, '是否在弹幕中:', text.includes(keyword));
+                        if (text.includes(keyword)) {
+                            // 更新关键词计数
+                            updateKeywordCount(childNode.id, keyword);
+                        }
+                    });
+                } else {
+                    console.log('子节点没有关键词属性或关键词为空');
+                }
+            });
+        }
+        
+        // 更新关键词计数
+        function updateKeywordCount(nodeId, keyword) {
+            const key = `${nodeId}:${keyword}`;
+            const currentCount = keywordCounts.get(key) || 0;
+            keywordCounts.set(key, currentCount + 1);
+            console.log(`关键词计数更新: ${nodeId}:${keyword} = ${currentCount + 1}`);
+        }
+        
+        // 计算子节点的关键词占比
+        function calculateKeywordRatios() {
+            if (!currentVideoNode || !currentVideoNode.children) {
+                return [];
+            }
+            
+            const nodeRatios = [];
+            
+            // 计算每个子节点的关键词总计数
+            currentVideoNode.children.forEach(childNode => {
+                let totalCount = 0;
+                
+                // 处理不同格式的关键词属性，与analyzeKeywords函数保持一致
+                let keywords = [];
+                if (childNode.keywords) {
+                    if (Array.isArray(childNode.keywords)) {
+                        keywords = childNode.keywords;
+                    } else if (typeof childNode.keywords === 'object') {
+                        // 尝试从对象中提取关键词
+                        console.log('关键词是对象，尝试提取');
+                        // 检查对象是否有特定的关键词属性
+                        if (childNode.keywords.keywords) {
+                            if (Array.isArray(childNode.keywords.keywords)) {
+                                keywords = childNode.keywords.keywords;
+                            } else {
+                                keywords = [childNode.keywords.keywords];
+                            }
+                        } else {
+                            // 从对象中获取键作为关键词
+                            keywords = Object.keys(childNode.keywords);
+                        }
+                    } else if (typeof childNode.keywords === 'string') {
+                        keywords = [childNode.keywords];
+                    }
+                }
+                
+                if (keywords.length > 0) {
+                    console.log('处理关键词数组:', keywords);
+                    keywords.forEach(keyword => {
+                        const key = `${childNode.id}:${keyword}`;
+                        totalCount += keywordCounts.get(key) || 0;
+                    });
+                }
+                
+                nodeRatios.push({
+                    node: childNode,
+                    count: totalCount
+                });
+            });
+            
+            // 计算总关键词数
+            const totalKeywords = nodeRatios.reduce((sum, item) => sum + item.count, 0);
+            
+            // 计算每个节点的占比
+            nodeRatios.forEach(item => {
+                item.ratio = totalKeywords > 0 ? (item.count / totalKeywords) * 100 : 0;
+            });
+            
+            // 按占比排序（降序）
+            nodeRatios.sort((a, b) => b.ratio - a.ratio);
+            
+            console.log('关键词占比计算结果:', nodeRatios);
+            return nodeRatios;
+        }
+        
+        // 根据关键词占比获取下一个视频
+        function getNextVideoByKeywords() {
+            const nodeRatios = calculateKeywordRatios();
+            
+            if (nodeRatios.length > 0) {
+                // 返回占比最高的节点
+                const topNode = nodeRatios[0];
+                console.log(`根据关键词占比选择下一个视频: ${topNode.node.name} (占比: ${topNode.ratio.toFixed(2)}%)`);
+                return topNode.node;
+            }
+            
+            // 如果没有关键词数据，返回第一个子节点
+            if (currentVideoNode && currentVideoNode.children && currentVideoNode.children.length > 0) {
+                console.log('没有关键词数据，返回第一个子节点');
+                return currentVideoNode.children[0];
+            }
+            
+            return null;
+        }
+
+        // 处理评论消息
+        function handleCommentMessage(data) {
+            console.log('处理评论消息:', data);
+            
+            // 创建评论对象
+            const comment = {
+                id: data.id,
+                author: data.studentName || data.author || '学生',
+                content: data.content,
+                time: new Date().toLocaleTimeString(),
+                type: data.isTeacher || data.teacher ? 'teacher' : 'student'
+            };
+            
+            // 添加到评论列表
+            if (commentListManager) {
+                commentListManager.addComment(comment);
+            }
+            
+            // 更新评论计数
+            updateCommentCount();
+        }
+
+        // 处理系统消息
+        function handleSystemMessage(data) {
+            console.log('处理系统消息:', data);
+            
+            // 创建系统消息
+            const message = {
+                id: Date.now(),
+                author: '系统',
+                content: data.content,
+                time: new Date().toLocaleTimeString(),
+                type: 'system'
+            };
+            
+            // 添加到评论列表
+            if (commentListManager) {
+                commentListManager.addComment(message);
+            }
+        }
+
+        // 发送弹幕
+        function sendBarrage() {
+            const content = document.getElementById('barrageInput').value.trim();
+            if (!content) {
+                showMessage('请输入弹幕内容', 'warning');
+                return;
+            }
+            
+            // 获取弹幕配置
+            const fontSize = parseInt(document.getElementById('fontSizeSelect').value);
+            const color = document.getElementById('colorPicker').value;
+            const mode = parseInt(document.getElementById('modeSelect').value);
+            
+            // 创建弹幕数据
+            const danmakuData = {
+                danmaku: {
+                    content: content,
+                    color: color,
+                    fontSize: fontSize,
+                    mode: mode,
+                    videoTime: videoRef.currentTime
+                }
+            };
+            
+            console.log('发送弹幕:', danmakuData);
+            console.log('Canvas宽度:', canvasRef.width);
+            console.log('Canvas高度:', canvasRef.height);
+            
+            // 发送WebSocket消息
+            if (wsManager) {
+                const success = wsManager.send({
+                    type: 'SEND_TEACHER_DANMAKU',
+                    data: danmakuData
+                });
+                console.log('WebSocket发送结果:', success);
+                if (success) {
+                    document.getElementById('barrageInput').value = '';
+                }
+            } else {
+                // 如果WebSocket未连接，本地添加弹幕作为备用
+                const barrage = {
+                    id: Date.now(),
+                    text: content,
+                    color: color,
+                    fontSize: fontSize,
+                    mode: mode,
+                    x: canvasRef.width,
+                    y: Math.random() * (canvasRef.height - 50) + 25,
+                    speed: 3
+                };
+                
+                console.log('WebSocket未连接，本地添加弹幕:', barrage);
+                barrageRenderer.addBarrage(barrage);
+                document.getElementById('barrageInput').value = '';
+            }
+        }
+
+        // 发送评论
+        function sendComment() {
+            const content = document.getElementById('commentInput').value.trim();
+            if (!content) {
+                showMessage('请输入评论内容', 'warning');
+                return;
+            }
+            
+            // 创建评论数据
+            const commentData = {
+                comment: {
+                    content: content,
+                    teacherName: '教师'
+                }
+            };
+            
+            // 发送WebSocket消息
+            if (wsManager) {
+                const success = wsManager.send({
+                    type: 'SEND_TEACHER_COMMENT',
+                    data: commentData
+                });
+                if (success) {
+                    console.log('评论发送成功');
+                    document.getElementById('commentInput').value = '';
+                    
+                    // 本地添加评论
+                    const comment = {
+                        id: Date.now(),
+                        author: '教师',
+                        content: content,
+                        time: new Date().toLocaleTimeString(),
+                        type: 'teacher'
+                    };
+                    if (commentListManager) {
+                        commentListManager.addComment(comment);
+                    }
+                    updateCommentCount();
+                } else {
+                    console.error('评论发送失败');
+                    showMessage('评论发送失败，请检查网络连接', 'error');
+                }
+            } else {
+                console.error('WebSocket连接未初始化');
+                showMessage('WebSocket连接未初始化', 'error');
+            }
+        }
+
+        // 清空评论输入框
+        function clearCommentInput() {
+            document.getElementById('commentInput').value = '';
+        }
+
+        // 更新评论计数
+        function updateCommentCount() {
+            const commentCountElement = document.getElementById('commentCount');
+            if (commentCountElement && commentListManager) {
+                commentCountElement.textContent = `${commentListManager.comments.length} 条评论`;
+            }
+        }
+
+        function handleOpinionMessage(data) {
+            console.log('收到学生观点:', data);
+
+            const opinion = {
+                id: data.id || ('opinion_' + Date.now()),
+                title: data.title || '',
+                content: data.content || '',
+                studentName: data.anonymous ? '匿名学生' : (data.displayName || data.studentName || '学生'),
+                sendTime: data.sendTime || new Date().toISOString(),
+                selected: false
+            };
+
+            teacherOpinionList.push(opinion);
+            renderTeacherOpinionList();
+            showMessage('收到新观点: ' + (data.studentName || '学生'), 'info');
+        }
+
+        function renderTeacherOpinionList() {
+            const container = document.getElementById('opinionListContainer');
+            const countEl = document.getElementById('opinionCount');
+
+            countEl.textContent = teacherOpinionList.length + ' 条观点';
+
+            if (teacherOpinionList.length === 0) {
+                container.innerHTML = '<div class="text-center py-4 text-muted">' +
+                    '<i class="fas fa-lightbulb fa-2x mb-2"></i><p>等待学生发表观点...</p></div>';
+                return;
+            }
+
+            let html = '';
+            teacherOpinionList.forEach(function(opinion, index) {
+                const timeStr = opinion.sendTime ? new Date(opinion.sendTime).toLocaleTimeString() : '';
+                const titleHtml = opinion.title
+                    ? '<div style="color: #ff9800; font-weight: bold; margin-bottom: 4px; font-family: \'Courier New\', monospace;">' + opinion.title + '</div>'
+                    : '';
+
+                html += '<div class="opinion-item" style="margin-bottom: 12px; padding: 12px; border-radius: 2px; border-left: 4px solid #ff9800; background: rgba(0, 0, 0, 0.5);">' +
+                    '<div style="display: flex; align-items: flex-start; gap: 10px;">' +
+                    '<input type="checkbox" class="opinion-checkbox" data-index="' + index + '" ' + (opinion.selected ? 'checked' : '') + ' style="margin-top: 4px; accent-color: #ff9800; transform: scale(1.2); cursor: pointer;" onchange="toggleOpinionSelection(' + index + ', this.checked)">' +
+                    '<div style="flex: 1;">' +
+                    '<div style="display: flex; align-items: center; margin-bottom: 4px;">' +
+                    '<i class="fas fa-user-graduate" style="color: #ff9800; margin-right: 6px;"></i>' +
+                    '<span style="font-weight: bold; color: #ff9800; font-family: \'Courier New\', monospace; font-size: 13px;">' + opinion.studentName + '</span>' +
+                    '<span style="margin-left: auto; font-size: 11px; color: #00ffff; font-family: \'Courier New\', monospace;">' + timeStr + '</span>' +
+                    '</div>' +
+                    titleHtml +
+                    '<div style="color: #00ff00; line-height: 1.5; font-family: \'Courier New\', monospace; font-size: 13px;">' + opinion.content + '</div>' +
+                    '</div>' +
+                    '</div>' +
+                    '</div>';
+            });
+
+            container.innerHTML = html;
+        }
+
+        function toggleOpinionSelection(index, checked) {
+            if (index >= 0 && index < teacherOpinionList.length) {
+                teacherOpinionList[index].selected = checked;
+            }
+        }
+
+        function selectAllOpinions() {
+            teacherOpinionList.forEach(function(o) { o.selected = true; });
+            renderTeacherOpinionList();
+        }
+
+        function deselectAllOpinions() {
+            teacherOpinionList.forEach(function(o) { o.selected = false; });
+            renderTeacherOpinionList();
+        }
+
+        function exportSelectedOpinions() {
+            var selectedIds = [];
+            teacherOpinionList.forEach(function(opinion) {
+                if (opinion.selected && opinion.id) {
+                    selectedIds.push(opinion.id);
+                }
+            });
+
+            if (selectedIds.length === 0) {
+                showMessage('请先勾选要导出的观点', 'warning');
+                return;
+            }
+
+            var classroomId = getClassroomId();
+            if (!classroomId) {
+                showMessage('无法获取课堂ID', 'error');
+                return;
+            }
+
+            fetch('/teacher/classroom/' + classroomId + '/opinions/export/txt', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(selectedIds)
+            })
+            .then(function(response) {
+                if (!response.ok) {
+                    throw new Error('导出失败');
+                }
+                return response.blob();
+            })
+            .then(function(blob) {
+                var url = window.URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'opinions_' + classroomId + '_' + Date.now() + '.txt';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                showMessage('导出成功，共 ' + selectedIds.length + ' 条观点', 'success');
+            })
+            .catch(function(error) {
+                console.error('导出观点失败:', error);
+                showMessage('导出失败: ' + error.message, 'error');
+            });
+        }
+
+        // 切换学生弹幕权限
+        function toggleStudentDanmaku() {
+            isStudentDanmakuDisabled = !isStudentDanmakuDisabled;
+            const button = document.getElementById('toggleDanmakuBtn');
+            if (isStudentDanmakuDisabled) {
+                button.innerHTML = '<i class="fas fa-comment"></i> 允许学生发弹幕';
+                button.classList.remove('btn-warning');
+                button.classList.add('btn-success');
+                showMessage('已禁止学生发送弹幕', 'info');
+            } else {
+                button.innerHTML = '<i class="fas fa-comment-slash"></i> 禁止学生发弹幕';
+                button.classList.remove('btn-success');
+                button.classList.add('btn-warning');
+                showMessage('已允许学生发送弹幕', 'info');
+            }
+            
+            // 发送权限更新消息
+            if (wsManager) {
+                wsManager.send({
+                    type: 'TOGGLE_STUDENT_DANMAKU',
+                    data: {
+                        disabled: isStudentDanmakuDisabled
+                    }
+                });
+            }
+        }
+
+        // 切换学生评论权限
+        function toggleStudentComments() {
+            isStudentCommentsDisabled = !isStudentCommentsDisabled;
+            const button = document.getElementById('toggleCommentBtn');
+            if (isStudentCommentsDisabled) {
+                button.innerHTML = '<i class="fas fa-comment"></i> 允许学生发评论';
+                button.classList.remove('btn-secondary');
+                button.classList.add('btn-success');
+                showMessage('已禁止学生发送评论', 'info');
+            } else {
+                button.innerHTML = '<i class="fas fa-comment-slash"></i> 禁止学生发评论';
+                button.classList.remove('btn-success');
+                button.classList.add('btn-secondary');
+                showMessage('已允许学生发送评论', 'info');
+            }
+            
+            // 发送权限更新消息
+            if (wsManager) {
+                wsManager.send({
+                    type: 'TOGGLE_STUDENT_COMMENTS',
+                    data: {
+                        disabled: isStudentCommentsDisabled
+                    }
+                });
+            }
+        }
+
+        // 切换学生所有消息权限
+        function toggleStudentAllMessages() {
+            isStudentAllMessagesDisabled = !isStudentAllMessagesDisabled;
+            const button = document.getElementById('toggleAllMessagesBtn');
+            if (isStudentAllMessagesDisabled) {
+                button.innerHTML = '<i class="fas fa-check"></i> 允许学生发消息';
+                button.classList.remove('btn-danger');
+                button.classList.add('btn-success');
+                showMessage('已禁止学生发送所有消息', 'info');
+            } else {
+                button.innerHTML = '<i class="fas fa-ban"></i> 禁止学生发消息';
+                button.classList.remove('btn-success');
+                button.classList.add('btn-danger');
+                showMessage('已允许学生发送消息', 'info');
+            }
+            
+            // 发送权限更新消息
+            if (wsManager) {
+                wsManager.send({
+                    type: 'TOGGLE_STUDENT_ALL_MESSAGES',
+                    data: {
+                        disabled: isStudentAllMessagesDisabled
+                    }
+                });
+            }
+        }
+
+        // 处理视频播放
+        function handleVideoPlay() {
+            isPlayingVideo = true;
+            console.log('视频开始播放');
+        }
+
+        // 处理视频暂停
+        function handleVideoPause() {
+            isPlayingVideo = false;
+            console.log('视频暂停');
+        }
+
+        // 处理视频结束
+        function handleVideoEnded() {
+            console.log('视频播放结束');
+            showMessage('视频播放结束', 'info');
+            
+            // 自动跳转到下一个视频（如果有）
+            if (currentVideoNode && videoTree) {
+                // 根据关键词占比获取下一个视频
+                const nextVideo = getNextVideoByKeywords();
+                if (nextVideo) {
+                    playVideo(nextVideo);
+                }
+                
+                // 重置关键词计数，为下一个视频做准备
+                keywordCounts.clear();
+                console.log('关键词计数已重置');
+            }
+        }
+
+        // 获取下一个视频
+        function getNextVideo(currentNodeId) {
+            if (!videoTree || !videoTree.elements) {
+                return null;
+            }
+            
+            // 递归查找当前节点
+            function findNode(nodes) {
+                for (let i = 0; i < nodes.length; i++) {
+                    const node = nodes[i];
+                    if (node.id === currentNodeId) {
+                        // 检查当前节点是否有子节点（按照link顺序）
+                        if (node.children && node.children.length > 0) {
+                            // 返回第一个子节点（按照link顺序）
+                            return node.children[0];
+                        }
+                        // 如果没有子节点，停止播放
+                        return null;
+                    }
+                    if (node.children && node.children.length > 0) {
+                        const found = findNode(node.children);
+                        if (found) {
+                            return found;
+                        }
+                    }
+                }
+                return null;
+            }
+            
+            return findNode(videoTree.elements);
+        }
+
+        // 初始化智能推荐系统
+        function initIntelligentRecommendation() {
+            console.log('初始化智能推荐系统...');
+            
+
+            
+            // 模拟关键词分析
+            keywordAnalysisInterval = setInterval(() => {
+                updateKeywordAnalysis();
+            }, 20000); // 每20秒更新一次关键词分析
+        }
+
+
+
+        // 更新关键词分析
+        function updateKeywordAnalysis() {
+            const keywordAnalysis = document.getElementById('keywordAnalysis');
+            if (keywordAnalysis) {
+                // 从关键词计数中获取实际的关键词
+                const keywordMap = new Map();
+                keywordCounts.forEach((count, key) => {
+                    const [nodeId, keyword] = key.split(':');
+                    if (keywordMap.has(keyword)) {
+                        keywordMap.set(keyword, keywordMap.get(keyword) + count);
+                    } else {
+                        keywordMap.set(keyword, count);
+                    }
+                });
+                
+                // 转换为数组并排序
+                const keywords = Array.from(keywordMap.entries())
+                    .map(([word, count]) => ({ word, count }))
+                    .sort((a, b) => b.count - a.count)
+                    .slice(0, 5); // 只显示前5个关键词
+                
+                let html = '<div class="row">';
+                if (keywords.length > 0) {
+                    keywords.forEach((keyword, index) => {
+                        const maxCount = Math.max(...keywords.map(k => k.count));
+                        const percentage = maxCount > 0 ? (keyword.count / maxCount) * 100 : 0;
+                        html += `
+                            <div class="col-6 mb-2">
+                                <div class="d-flex justify-content-between">
+                                    <span>${keyword.word}</span>
+                                    <span class="badge bg-info">${keyword.count}</span>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-primary" role="progressbar" style="width: ${percentage}%" aria-valuenow="${keyword.count}" aria-valuemin="0" aria-valuemax="${maxCount}"></div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html += `
+                        <div class="col-12 text-center py-4 text-muted">
+                            <i class="fas fa-chart-pie fa-2x mb-2"></i>
+                            <p>暂无弹幕关键词</p>
+                        </div>
+                    `;
+                }
+                html += '</div>';
+                
+                keywordAnalysis.innerHTML = html;
+            }
+        }
+
+
+
+        // 打开PPT课堂
+        function openPptClassroom() {
+            console.log('打开PPT课堂');
+            window.location.href = '/kdocs/dashboard';
+        }
+
+        // 复制课堂ID
+        function copyClassroomId() {
+            const classroomId = document.getElementById('classroomId').textContent.trim();
+            navigator.clipboard.writeText(classroomId).then(() => {
+                showMessage('课堂ID已复制到剪贴板', 'success');
+            }).catch(err => {
+                console.error('复制失败:', err);
+                showMessage('复制失败，请手动复制', 'error');
+            });
+        }
+
+        // 显示消息提示
+        function showMessage(message, type = 'info') {
+            UiCommon.notify(null, message, type);
+        }
+
+        // 页面加载完成后初始化
+        window.onload = function() {
+            init();
+        };
+    </script>
+</body>
+</html>

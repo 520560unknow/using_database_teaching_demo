@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课堂智答 · 学生端</title>
+    <link rel="stylesheet" href="/css/cyberpunk-2077.css">
+    <script src="/js/app-config.js"></script>
+    <style>
+        /* 输入框和按钮美化样式 */
+        .cyberpunk-input {
+            background: rgba(0, 0, 0, 0.8) !important;
+            border: 1px solid rgba(0, 255, 255, 0.5) !important;
+            border-radius: 4px !important;
+            padding: 12px 16px !important;
+            color: #00ffff !important;
+            font-family: 'Courier New', monospace !important;
+            font-size: 14px !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
+            width: 100% !important;
+        }
+        
+        .cyberpunk-input:focus {
+            outline: none !important;
+            border-color: #00ffff !important;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5) !important;
+            background: rgba(0, 0, 0, 0.9) !important;
+        }
+        
+        .cyberpunk-input::placeholder {
+            color: rgba(0, 255, 255, 0.5) !important;
+        }
+        
+        .cyberpunk-button {
+            padding: 12px 20px !important;
+            border: 1px solid rgba(0, 255, 255, 0.5) !important;
+            border-radius: 4px !important;
+            background: rgba(0, 0, 0, 0.8) !important;
+            color: #00ffff !important;
+            font-family: 'Courier New', monospace !important;
+            font-size: 14px !important;
+            font-weight: bold !important;
+            cursor: pointer !important;
+            transition: all 0.3s ease !important;
+            position: relative !important;
+            overflow: hidden !important;
+            width: 100% !important;
+            margin-top: 15px !important;
+        }
+        
+        .cyberpunk-button::before {
+            content: '' !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: -100% !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.2), transparent) !important;
+            transition: left 0.5s ease !important;
+        }
+        
+        .cyberpunk-button:hover::before {
+            left: 100% !important;
+        }
+        
+        .cyberpunk-button:hover {
+            border-color: #00ffff !important;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5) !important;
+            transform: translateY(-2px) !important;
+        }
+        
+        .cyberpunk-button:active {
+            transform: translateY(0) !important;
+        }
+        
+        .cyberpunk-button-primary {
+            background: rgba(0, 255, 255, 0.2) !important;
+        }
+        
+        .cyberpunk-form-group {
+            margin-bottom: 15px !important;
+        }
+        
+        .cyberpunk-form-label {
+            display: block !important;
+            margin-bottom: 8px !important;
+            color: #00ffff !important;
+            font-family: 'Courier New', monospace !important;
+            font-size: 14px !important;
+            font-weight: bold !important;
+        }
+        
+        /* 加入卡片补充样式 */
+        .join-subtitle {
+            font-size: 13px;
+            color: rgba(0, 255, 255, 0.7);
+            margin-bottom: 14px;
+            line-height: 1.5;
+        }
+
+        .join-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .join-chip {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            color: #9feeff;
+            background: rgba(0, 255, 255, 0.06);
+        }
+
+        .entry-divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 14px 0 4px;
+            font-size: 12px;
+            color: rgba(0, 255, 255, 0.45);
+        }
+
+        .entry-divider::before,
+        .entry-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(0, 255, 255, 0.18);
+        }
+
+        .cyberpunk-button-ai {
+            border-color: rgba(255, 0, 160, 0.55) !important;
+            color: #ff8ad4 !important;
+            background: rgba(255, 0, 160, 0.08) !important;
+        }
+
+        .cyberpunk-button-ai:hover {
+            border-color: #ff00a0 !important;
+            box-shadow: 0 0 20px rgba(255, 0, 160, 0.45) !important;
+        }
+
+        /* 响应式样式 */
+        @media (max-width: 768px) {
+            .cyberpunk-card {
+                margin: 10px !important;
+                max-width: none !important;
+            }
+            
+            .dashboard-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 20px !important;
+            }
+            
+            .student-info {
+                margin-left: 0 !important;
+                text-align: left !important;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr !important;
+            }
+            
+            h1 {
+                font-size: 20px !important;
+            }
+            
+            h2 {
+                font-size: 18px !important;
+            }
+            
+            .card-title {
+                font-size: 16px !important;
+            }
+            
+            .cyberpunk-input {
+                width: 100% !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="cyberpunk-card" style="max-width: 1200px; margin: 0 auto; margin-top: 20px;">
+        <!-- 仪表盘头部 -->
+        <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid rgba(0, 255, 255, 0.3);">
+            <div class="welcome-section">
+                <h1>欢迎回来，学生</h1>
+                <p>这里是您的学习仪表盘，祝您学习愉快！</p>
+            </div>
+            <div class="student-info" style="text-align: right;">
+                <div class="student-avatar" style="width: 60px; height: 60px; border-radius: 2px; background: rgba(0, 255, 255, 0.2); border: 1px solid #00ffff; display: flex; align-items: center; justify-content: center; color: #00ffff; font-size: 24px; font-weight: bold; margin-left: auto; margin-bottom: 10px; box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <div class="student-details" style="color: #00ffff;">
+                    <div>在线状态: <span style="color: #00ff00;">在线</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 仪表盘卡片网格 -->
+        <div class="dashboard-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; margin-bottom: 30px;">
+            <!-- 快速加入课堂 -->
+            <div class="cyberpunk-card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div class="card-title" style="font-size: 18px; font-weight: bold; color: #00ffff; display: flex; align-items: center; gap: 10px; text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);">
+                        <div class="card-icon" style="width: 40px; height: 40px; border-radius: 2px; background: rgba(0, 255, 255, 0.2); border: 1px solid #00ffff; display: flex; align-items: center; justify-content: center; color: #00ffff; font-size: 18px; box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);">
+                            <i class="fas fa-sign-in-alt"></i>
+                        </div>
+                        快速加入课堂
+                    </div>
+                </div>
+                <form class="cyberpunk-form" onsubmit="joinClass(event)">
+                    <p class="join-subtitle">输入老师提供的课堂ID，进入实时课堂或开始自主学习。</p>
+                    <div class="join-chips">
+                        <span class="join-chip"><i class="fas fa-bolt"></i> 实时弹幕</span>
+                        <span class="join-chip"><i class="fas fa-book-open"></i> 课件同步</span>
+                        <span class="join-chip"><i class="fas fa-robot"></i> 自主学习</span>
+                    </div>
+                    <div class="cyberpunk-form-group">
+                        <label for="classroomId" class="cyberpunk-form-label">课堂ID</label>
+                        <input type="text" id="classroomId" class="cyberpunk-input" placeholder="请输入课堂ID" autocomplete="off" required>
+                    </div>
+                    <div class="cyberpunk-form-group">
+                        <label for="nickname" class="cyberpunk-form-label">昵称</label>
+                        <input type="text" id="nickname" class="cyberpunk-input" placeholder="仅用于课堂内显示" autocomplete="off" required>
+                    </div>
+                    <button type="submit" class="cyberpunk-button cyberpunk-button-primary" id="joinButton">
+                        <i class="fas fa-play"></i> 加入课堂
+                    </button>
+                    <div class="entry-divider">或</div>
+                    <button type="button" class="cyberpunk-button cyberpunk-button-ai" id="aiButton" onclick="enterAi()">
+                        <i class="fas fa-robot"></i> 课堂智答 · 自主学习
+                    </button>
+                </form>
+            </div>
+            
+            <!-- 进入PPT课堂 -->
+            <div class="cyberpunk-card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div class="card-title" style="font-size: 18px; font-weight: bold; color: #00ffff; display: flex; align-items: center; gap: 10px; text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);">
+                        <div class="card-icon" style="width: 40px; height: 40px; border-radius: 2px; background: rgba(0, 255, 255, 0.2); border: 1px solid #00ffff; display: flex; align-items: center; justify-content: center; color: #00ffff; font-size: 18px; box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);">
+                            <i class="fas fa-file-powerpoint"></i>
+                        </div>
+                        进入PPT课堂
+                    </div>
+                </div>
+                <form class="cyberpunk-form" onsubmit="joinPptClass(event)">
+                    <div class="cyberpunk-form-group">
+                        <label for="pptClassroomId" class="cyberpunk-form-label">课堂ID</label>
+                        <input type="text" id="pptClassroomId" class="cyberpunk-input" placeholder="请输入PPT课堂ID" required>
+                    </div>
+                    <div class="cyberpunk-form-group">
+                        <label for="pptNickname" class="cyberpunk-form-label">昵称</label>
+                        <input type="text" id="pptNickname" class="cyberpunk-input" placeholder="请输入您的昵称" required>
+                    </div>
+                    <button type="submit" class="cyberpunk-button cyberpunk-button-primary">
+                        <i class="fas fa-play"></i> 进入PPT课堂
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 加入课堂：先校验课堂是否存在，再跳转
+        async function joinClass(event) {
+            event.preventDefault();
+            const classroomId = document.getElementById('classroomId').value.trim();
+            const nickname = document.getElementById('nickname').value.trim();
+
+            if (!classroomId || !nickname) {
+                alert('请填写课堂ID和昵称');
+                return;
+            }
+
+            const btn = document.getElementById('joinButton');
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/classrooms/' + encodeURIComponent(classroomId) + '/exists');
+                const data = await res.json();
+
+                if (!data.exists) {
+                    alert('课堂不存在或已结束，请检查课堂ID');
+                    return;
+                }
+
+                const studentId = 'stu_' + Date.now();
+                const studentInfo = {
+                    id: studentId,
+                    studentId: studentId,
+                    name: nickname,
+                    classroomId: classroomId,
+                    joinTime: new Date().toISOString()
+                };
+                localStorage.setItem('studentInfo', JSON.stringify(studentInfo));
+                localStorage.setItem('classroomId', classroomId);
+
+                window.location.href = '/student/classroom?classroomId=' + encodeURIComponent(classroomId) +
+                    '&studentId=' + encodeURIComponent(studentId) +
+                    '&studentName=' + encodeURIComponent(nickname);
+            } catch (e) {
+                alert('无法连接服务器，请稍后重试');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 直接进入课堂智答（自主学习）
+        async function enterAi() {
+            const classroomId = document.getElementById('classroomId').value.trim();
+            if (!classroomId) {
+                alert('请先输入课堂ID');
+                return;
+            }
+
+            const btn = document.getElementById('aiButton');
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/classrooms/' + encodeURIComponent(classroomId) + '/exists');
+                const data = await res.json();
+
+                if (!data.exists) {
+                    alert('课堂不存在或已结束，请检查课堂ID');
+                    return;
+                }
+
+                let info = null;
+                try {
+                    info = JSON.parse(localStorage.getItem('studentInfo') || 'null');
+                } catch (e) {
+                    info = null;
+                }
+                const studentId = (info && info.classroomId === classroomId && info.studentId)
+                    ? info.studentId
+                    : 'stu_' + Date.now();
+
+                localStorage.setItem('classroomId', classroomId);
+                window.location.href = '/student/ai?classroomId=' + encodeURIComponent(classroomId) +
+                    '&studentId=' + encodeURIComponent(studentId);
+            } catch (e) {
+                alert('无法连接服务器，请稍后重试');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 预填上次加入的课堂与昵称
+        document.addEventListener('DOMContentLoaded', function () {
+            try {
+                const info = JSON.parse(localStorage.getItem('studentInfo') || 'null');
+                if (info) {
+                    if (info.classroomId) document.getElementById('classroomId').value = info.classroomId;
+                    if (info.name) document.getElementById('nickname').value = info.name;
+                }
+            } catch (e) {
+                // 忽略损坏的本地记录
+            }
+        });
+        
+        // 进入PPT课堂函数
+        function joinPptClass(event) {
+            event.preventDefault();
+            const classroomId = document.getElementById('pptClassroomId').value;
+            const nickname = document.getElementById('pptNickname').value;
+            
+            if (classroomId && nickname) {
+                // 跳转到学生PPT课堂页面
+                window.location.href = `/student/ppt-class?classroomId=${encodeURIComponent(classroomId)}&studentId=${encodeURIComponent(nickname)}&studentName=${encodeURIComponent(nickname)}`;
+            }
+        }
+    </script>
+
+    <!-- Font Awesome 图标 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</body>
+</html>

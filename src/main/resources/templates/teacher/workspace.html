@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频与数据包 · 教师端</title>
+    <style>
+        :root { --bg:#05070d; --panel:rgba(14,20,34,.9); --line:rgba(0,229,255,.22); --cyan:#00e5ff; --pink:#ff2d95; --green:#39ff88; --text:#e8f4ff; --muted:#8fa6c4; }
+        * { box-sizing: border-box; }
+        body { margin:0; min-height:100vh; color:var(--text); font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+            background: radial-gradient(circle at 10% 5%, rgba(255,45,149,.14), transparent 30%),
+                        radial-gradient(circle at 92% 8%, rgba(0,229,255,.13), transparent 32%),
+                        linear-gradient(160deg,#05070d,#08101f 55%,#05070d); }
+        .wrap { max-width:1180px; margin:0 auto; padding:26px 22px 40px; }
+        header { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:18px; }
+        h1 { margin:0; font-size:24px; letter-spacing:1px; }
+        .sub { color:var(--muted); font-size:13px; margin-top:4px; line-height:1.7; }
+        .badge { padding:7px 11px; border:1px solid var(--line); border-radius:999px; color:var(--cyan); background:rgba(0,229,255,.06); font-size:12px; white-space:nowrap; }
+        .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+        .stat { padding:14px 16px; border-radius:14px; background:var(--panel); border:1px solid var(--line); min-width:0; }
+        .stat span { color:var(--muted); font-size:12px; }
+        .stat b { display:block; margin-top:6px; font-size:22px; color:var(--cyan); word-break:break-all; }
+        .stat.pink b { color:var(--pink); }
+        .stat.green b { color:var(--green); }
+        .section { margin-bottom:18px; padding:18px; border-radius:16px; background:var(--panel); border:1px solid var(--line); box-shadow:0 14px 40px rgba(0,0,0,.28); }
+        .section h2 { margin:0 0 4px; font-size:16px; letter-spacing:.5px; }
+        .hint { margin:0 0 14px; color:var(--muted); font-size:12px; line-height:1.7; }
+        .row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+        .btn { cursor:pointer; border:1px solid var(--line); background:rgba(0,229,255,.08); color:var(--cyan); border-radius:10px; padding:10px 14px; font-size:13px; font-family:inherit; white-space:nowrap; }
+        .btn:hover { background:rgba(0,229,255,.16); }
+        .btn.primary { background:linear-gradient(135deg,var(--cyan),#3f8cff); color:#031018; border:none; font-weight:700; }
+        .btn.pink { color:var(--pink); border-color:rgba(255,45,149,.3); background:rgba(255,45,149,.08); }
+        .btn.pink:hover { background:rgba(255,45,149,.16); }
+        .path { padding:11px 13px; border-radius:10px; background:rgba(4,10,20,.9); border:1px solid rgba(0,229,255,.16); color:var(--muted); font-size:12px; word-break:break-all; margin-bottom:10px; }
+        .videos { display:flex; flex-direction:column; gap:8px; }
+        .video { display:flex; justify-content:space-between; gap:12px; align-items:center; padding:11px 13px; border-radius:10px; background:rgba(0,229,255,.04); border:1px solid rgba(0,229,255,.13); }
+        .video .name { font-size:13px; font-weight:600; word-break:break-all; }
+        .video .meta { color:var(--muted); font-size:11.5px; margin-top:4px; }
+        .empty { padding:28px; text-align:center; color:var(--muted); border:1px dashed rgba(0,229,255,.2); border-radius:12px; font-size:12.5px; }
+        .toast { position:fixed; right:22px; bottom:22px; padding:12px 16px; border-radius:12px; background:rgba(8,16,28,.96); border:1px solid var(--line); opacity:0; transform:translateY(10px); transition:.25s; font-size:13px; z-index:20; }
+        .toast.show { opacity:1; transform:translateY(0); }
+        .dropzone { margin:0 0 12px; padding:22px 16px; border-radius:12px; border:1.5px dashed rgba(0,229,255,.35); background:rgba(0,229,255,.04); text-align:center; color:var(--muted); font-size:13px; cursor:pointer; transition:.2s; }
+        .dropzone:hover, .dropzone.dragover { border-color:rgba(0,229,255,.6); background:rgba(0,229,255,.08); color:var(--text); }
+        .dropzone strong { color:var(--cyan); }
+        @media (max-width:820px){ .stats{grid-template-columns:1fr 1fr;} header{flex-direction:column;align-items:flex-start;} }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <header>
+        <div>
+            <h1>视频与数据包</h1>
+            <div class="sub">视频和视频树 JSON 持久化在同一个工作区文件夹。可以整包导出带走、在别处导入后用自己的文件夹授课，也可以清空旧数据重新开始。</div>
+        </div>
+        <a class="badge" th:href="@{/teacher/dashboard(teacherId=${teacherId})}">← 返回工作台</a>
+    </header>
+
+    <div class="stats">
+        <div class="stat"><span>视频树</span><b id="treeCount">0</b></div>
+        <div class="stat green"><span>视频文件</span><b id="videoCount">0</b></div>
+        <div class="stat pink"><span>视频总体积</span><b id="videoSize">-</b></div>
+        <div class="stat"><span>数据状态</span><b id="jsonState">-</b></div>
+    </div>
+
+    <div class="section">
+        <h2>工作区位置</h2>
+        <p class="hint">重启服务不会清空这里的内容；课堂、资料与问答记录仍会在每次启动时重置。把整个文件夹或导出的 zip 拷到另一台电脑，导入后即可继续授课。</p>
+        <div class="path" id="workspacePath">加载中…</div>
+        <div class="row">
+            <button class="btn primary" id="exportBtn">打包下载（zip）</button>
+            <button class="btn" id="refreshBtn">刷新</button>
+            <button class="btn pink" id="clearBtn">清空全部数据</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>导入旧数据包</h2>
+        <p class="hint">选择之前导出的 zip。压缩包内的 <strong>video-trees.json</strong> 会恢复视频树，<strong>videos/</strong> 下的视频会恢复到视频目录，导入后立即生效。</p>
+        <div class="dropzone" id="dropzone">
+            <div><strong>把 zip 拖到这里</strong>，或点击选择文件</div>
+        </div>
+        <input type="file" id="zipFile" accept=".zip" style="display:none" />
+    </div>
+
+    <div class="section">
+        <h2>视频文件</h2>
+        <p class="hint">删除单个视频只会移除文件；视频树里引用该视频的节点需要到视频树编辑器里调整。</p>
+        <div class="videos" id="videos"></div>
+    </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="/js/ui-common.js"></script>
+<script>
+    const esc = UiCommon.esc;
+    function toast(text) {
+        const el = document.getElementById('toast');
+        el.textContent = text; el.classList.add('show');
+        setTimeout(function(){ el.classList.remove('show'); }, 2600);
+    }
+    function fmtSize(bytes) {
+        if (!bytes) return '0 B';
+        const units = ['B','KB','MB','GB'];
+        let i = 0, value = bytes;
+        while (value >= 1024 && i < units.length - 1) { value /= 1024; i++; }
+        return value.toFixed(i === 0 ? 0 : 1) + ' ' + units[i];
+    }
+    function fmtTime(ts) {
+        if (!ts) return '';
+        const d = new Date(ts);
+        const pad = function (n) { return n < 10 ? '0' + n : n; };
+        return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
+            + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    }
+
+    async function loadInfo() {
+        try {
+            const res = await fetch('/api/workspace/info', {cache: 'no-store'});
+            const data = await res.json();
+            document.getElementById('treeCount').textContent = data.treeCount;
+            document.getElementById('videoCount').textContent = data.videoCount;
+            document.getElementById('videoSize').textContent = fmtSize(data.videoBytes);
+            document.getElementById('jsonState').textContent = data.jsonExists ? '已保存' : '暂无';
+            document.getElementById('workspacePath').textContent = data.workspaceDir;
+            renderVideos(data.videos || []);
+        } catch (e) {
+            toast('读取工作区失败，请确认本地服务已启动');
+        }
+    }
+
+    function renderVideos(items) {
+        const box = document.getElementById('videos');
+        if (!items.length) {
+            box.innerHTML = '<div class="empty">视频目录里还没有文件，去视频树编辑器上传即可。</div>';
+            return;
+        }
+        box.innerHTML = '';
+        items.forEach(function (item) {
+            const div = document.createElement('div');
+            div.className = 'video';
+            div.innerHTML = '<div><div class="name">' + esc(item.name) + '</div>' +
+                '<div class="meta">' + fmtSize(item.size) + ' · ' + fmtTime(item.modified) + '</div></div>' +
+                '<button class="btn pink">删除</button>';
+            div.querySelector('button').addEventListener('click', async function () {
+                if (!confirm('确定删除视频「' + item.name + '」？')) return;
+                const r = await fetch('/api/workspace/video?name=' + encodeURIComponent(item.name), {method: 'DELETE'});
+                const d = await r.json();
+                toast(d.message || (d.success ? '已删除' : '删除失败'));
+                loadInfo();
+            });
+            box.appendChild(div);
+        });
+    }
+
+    async function importZip(file) {
+        if (!file) return;
+        if (!/\.zip$/i.test(file.name)) { toast('请选择 zip 压缩包'); return; }
+        const form = new FormData();
+        form.append('file', file);
+        toast('正在导入…');
+        try {
+            const res = await fetch('/api/workspace/import', {method: 'POST', body: form});
+            const data = await res.json();
+            if (data.success) {
+                toast('导入完成：' + data.videoCount + ' 个视频，' + data.treeCount + ' 棵树');
+                loadInfo();
+            } else {
+                toast(data.message || '导入失败');
+            }
+        } catch (e) {
+            toast('导入失败，请稍后重试');
+        }
+        document.getElementById('zipFile').value = '';
+    }
+
+    document.getElementById('refreshBtn').addEventListener('click', loadInfo);
+    document.getElementById('exportBtn').addEventListener('click', function () {
+        window.location.href = '/api/workspace/export';
+    });
+    document.getElementById('clearBtn').addEventListener('click', async function () {
+        if (!confirm('清空后视频和视频树都会被删除，且无法恢复。确定继续？')) return;
+        const r = await fetch('/api/workspace/clear', {method: 'DELETE'});
+        const d = await r.json();
+        toast(d.message || '已清空');
+        loadInfo();
+    });
+
+    const dropzone = document.getElementById('dropzone');
+    const zipFile = document.getElementById('zipFile');
+    dropzone.addEventListener('click', function () { zipFile.click(); });
+    zipFile.addEventListener('change', function () { importZip(zipFile.files[0]); });
+    ['dragenter', 'dragover'].forEach(function (name) {
+        dropzone.addEventListener(name, function (e) { e.preventDefault(); dropzone.classList.add('dragover'); });
+    });
+    ['dragleave', 'drop'].forEach(function (name) {
+        dropzone.addEventListener(name, function (e) { e.preventDefault(); dropzone.classList.remove('dragover'); });
+    });
+    dropzone.addEventListener('drop', function (e) {
+        if (e.dataTransfer.files && e.dataTransfer.files.length) importZip(e.dataTransfer.files[0]);
+    });
+
+    loadInfo();
+</script>
+</body>
+</html>
